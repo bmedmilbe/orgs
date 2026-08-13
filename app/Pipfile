@@ -1,0 +1,58 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+# Core Framework & Multi-Tenancy Architecture
+django = "==5.0"
+django-tenants = {extras = ["psycopg2"], version = "*"}
+
+# API Lifecycle, Security & Hierarchical Routing
+djangorestframework = "==3.15.2"
+djangorestframework-simplejwt = "*"
+drf-nested-routers = "==0.94.1"
+django-cors-headers = "==4.7.0"
+djoser = "==2.3.1"
+django-filter = "==25.1"
+drf-spectacular = "*"
+
+# Multi-Language Translation Layer
+django-modeltranslation = "==0.19.17"
+
+# Headless Word Document (.docx) Parsing Pipeline
+docx2txt = "==0.8"
+beautifulsoup4 = "==4.13.3"
+python-slugify = "==8.0.4"
+
+# Media Management & Cloud Storage Configuration (S3-Compatible Ecosystem)
+pillow = "*"
+qrcode = {extras = ["pil"], version = "*"}
+django-storages = "==1.14.5"
+boto3 = "==1.35.99"
+
+# DevOps, Environment Variables & Production Hosting Layer
+python-decouple = "==3.8"
+dj-database-url = "==3.1.2"
+psycopg2 = "==2.9.10"
+psycopg2-binary = "==2.9.0"
+gunicorn = "==23.0.0"
+whitenoise = "==6.9.0"
+faker = "*"
+
+[dev-packages]
+# Linters & Formatters
+autopep8 = "==2.3.2"
+ruff = "==0.15.14"
+
+# Automated Testing Suite & Factories
+pytest = "==9.0.2"
+pytest-django = "==4.11.1"
+pytest-xdist = "==3.8.0"
+pytest-cov = "==7.1.0"
+factory-boy = "==3.3.3"
+pytest-factoryboy = "==2.8.1"
+django-debug-toolbar = "==6.3.0"
+
+[requires]
+python_version = "3.10"
