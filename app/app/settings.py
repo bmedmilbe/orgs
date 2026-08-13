@@ -117,8 +117,8 @@ USE_TZ = True
 
 LANGUAGES = (
     ('pt', 'Portuguese'),
-    ('en', 'English'),
     ('fr', 'French'),
+    ('en', 'English'),
 )
 
 MODELTRANSLATION_FALLBACK_LANGUAGES = {
