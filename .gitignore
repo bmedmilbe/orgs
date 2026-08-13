@@ -1,0 +1,91 @@
+# ==============================================================================
+# PYTHON & DJANGO
+# ==============================================================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django local settings & databases
+db.sqlite3
+db.sqlite3-journal
+local_settings.py
+
+# Django collected static files and user media uploads
+staticfiles/
+static_root/
+media_root/
+/media/
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# ==============================================================================
+# PYTEST & TESTING
+# ==============================================================================
+# Pytest cache and artifacts
+.pytest_cache/
+.pytest_cache*
+.cache/
+
+# Test coverage reports
+htmlcov/
+.coverage
+.coverage.*
+.coverage-summary
+nosetests.xml
+coverage.xml
+*.cover
+.mutants/
+
+# ==============================================================================
+# DOCKER
+# ==============================================================================
+# Docker data volumes (if named after services)
+.docker-data/
+postgres_data/
+pgdata/
+
+# Docker build logs
+*.log
+docker-compose.override.yml
+
+# ==============================================================================
+# NGINX
+# ==============================================================================
+# Nginx log files generated during local runtime
+nginx/logs/
+*.nginx.log
+access.log
+error.log
+
+# ==============================================================================
+# SECURITY & ENVIRONMENT VARIABLES
+# ==============================================================================
+# Strictly ignore private credential files
+.env
+.env.*
+!.env.example
+*.env
+credentials.json
+
+# ==============================================================================
+# OPERATING SYSTEMS & IDEs
+# ==============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# JetBrains (PyCharm, WebStorm etc.)
+.idea/
+
+# Visual Studio Code
+.vscode/

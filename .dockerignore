@@ -1,0 +1,61 @@
+# ==============================================================================
+# Docker Build Context Ignore Manifest
+# ==============================================================================
+
+# 1. Version Control & Repository Metadata
+.git
+.gitignore
+.github
+.gitlab-ci.yml
+
+# 2. Python Environment Caches & Artifacts
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.history/
+
+# 3. Pipenv / Package Dependency Cache Locators
+.pipenv/
+Pipfile.lock
+
+# 4. Local Environment Configurations & Sensitive Secrets
+.env
+.env.*
+secrets.json
+*.pem
+*.key
+*.pub
+
+# 5. Testing Suites, Quality Assurance & Linting Reports
+.pytest_cache/
+.coverage
+htmlcov/
+flake8
+.mypy_cache/
+.tox/
+
+# 6. Django Database & Uploaded Media Assets (Prevent local files from overwriting production S3)
+*.log
+db.sqlite3
+db.sqlite3-journal
+**/media/
+**/static/
+!**/static/admin/
+
+# 7. IDE, Text Editors & Workspace Metadata
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*~
+.DS_Store
