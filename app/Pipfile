@@ -46,13 +46,13 @@ autopep8 = "==2.3.2"
 ruff = "==0.15.14"
 
 # Automated Testing Suite & Factories
-pytest = "==9.0.2"
-pytest-django = "==4.11.1"
-pytest-xdist = "==3.8.0"
-pytest-cov = "==7.1.0"
-factory-boy = "==3.3.3"
-pytest-factoryboy = "==2.8.1"
-django-debug-toolbar = "==6.3.0"
+pytest = "*"
+pytest-django = "*"
+pytest-xdist = "*"
+pytest-cov = "*"
+factory-boy = "*"
+pytest-factoryboy = "*"
+django-debug-toolbar = "*"
 
 [requires]
 python_version = "3.10"

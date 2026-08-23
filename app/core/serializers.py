@@ -73,6 +73,7 @@ class TenantUserCreateSerializer(UserCreateSerializer):
             "first_name",
             "last_name",
             "is_customer",
+            "id",
         )
 
     def validate(self, attrs):
