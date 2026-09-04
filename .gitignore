@@ -91,3 +91,6 @@ ehthumbs.db
 .vscode/
 
 orgs_api/
+
+dev.py
+
