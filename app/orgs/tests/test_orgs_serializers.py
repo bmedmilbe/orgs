@@ -75,9 +75,9 @@ User = get_user_model()
 # ==========================================
 
 
-class TestCustomerSerializer(TenantAwareTestCase):  
+class TestCustomerSerializer(TenantAwareTestCase):
     def test_customer_serializer(self):
-        with tenant_context(self.tenant): 
+        with tenant_context(self.tenant):
             customer = CustomerFactory(
                 user__username="testuser",
                 user__first_name="John",
@@ -97,6 +97,7 @@ class TestCustomerSerializer(TenantAwareTestCase):
 # ==========================================
 # 2. DYNAMIC CONTENT & PAGE BUILDER SERIALIZER TESTS
 # ==========================================
+
 
 class TestPageContentBlockSerializer(TenantAwareTestCase):
     def test_page_content_block_serializer(self):
@@ -161,6 +162,7 @@ class TestPageDetailSerializer(TenantAwareTestCase):
 # 3. METRICS & GOALS SERIALIZER TESTS
 # ==========================================
 
+
 class TestYearGoalSerializer(TenantAwareTestCase):
     def test_year_goal_serializer(self):
         with tenant_context(self.tenant):
@@ -183,6 +185,7 @@ class TestYearGoalSerializer(TenantAwareTestCase):
 # ==========================================
 # 4. ASSOCIATIONS & NETWORK SERIALIZER TESTS
 # ==========================================
+
 
 class TestDistrictSerializer(TenantAwareTestCase):
     def test_district_serializer(self):
@@ -227,6 +230,7 @@ class TestAssociationSerializer(TenantAwareTestCase):
 # ==========================================
 # 5. CATALOGUE & ECO-TOURISM SERIALIZER TESTS
 # ==========================================
+
 
 class TestCatalogItemSpecificationSerializer(TenantAwareTestCase):
     def test_specification_serializer(self):
@@ -297,6 +301,7 @@ class TestCategoryDetailSerializer(TenantAwareTestCase):
 # ==========================================
 # 6. POSTS, BLOG & NEWS SERIALIZER TESTS
 # ==========================================
+
 
 class TestBlogCategorySerializer(TenantAwareTestCase):
     def test_blog_category_serializer(self):
@@ -429,6 +434,7 @@ class TestPostDetailSerializer(TenantAwareTestCase):
 # 7. MULTIMEDIA & COMMUNICATIONS SERIALIZER TESTS
 # ==========================================
 
+
 class TestVideoSerializer(TenantAwareTestCase):
     def test_video_serializer(self):
         with tenant_context(self.tenant):
@@ -500,6 +506,7 @@ class TestPartnerSerializer(TenantAwareTestCase):
 # 8. CORPORATE GOVERNANCE & TEAM SERIALIZER TESTS
 # ==========================================
 
+
 class TestRoleSerializer(TenantAwareTestCase):
     def test_role_serializer(self):
         with tenant_context(self.tenant):
@@ -529,6 +536,7 @@ class TestTeamSerializer(TenantAwareTestCase):
 # ==========================================
 # 9. GENERAL DOCUMENTATION SERIALIZER TESTS
 # ==========================================
+
 
 class TestBudgetSerializer(TenantAwareTestCase):
     def test_budget_serializer(self):
@@ -573,6 +581,7 @@ class TestExtraDocSerializer(TenantAwareTestCase):
 # ==========================================
 # REVIEW SERIALIZER TESTS
 # ==========================================
+
 
 class TestReviewSerializer(TenantAwareTestCase):
     def test_review_serializer(self):
@@ -645,6 +654,7 @@ class TestReviewSerializer(TenantAwareTestCase):
 # SERIALIZER INTEGRATION TESTS
 # ==========================================
 
+
 class TestSerializerIntegration(TenantAwareTestCase):
     def test_post_detail_serializer_with_all_relations(self):
         with tenant_context(self.tenant):
@@ -696,6 +706,7 @@ class TestSerializerIntegration(TenantAwareTestCase):
 # ==========================================
 # SERIALIZER FIELD TESTS
 # ==========================================
+
 
 class TestSerializerFields(TenantAwareTestCase):
     def test_customer_serializer_fields(self):

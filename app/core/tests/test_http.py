@@ -263,7 +263,6 @@ class TestTenantEmailOrPhoneBackend(TestCase):
         with tenant_context(self.bridge_tenant):
             email_user = self.bridge_customer
 
-               
         request = self._create_request(self.bridge_tenant, DomainType.BRIDGE)
         backend = TenantEmailOrPhoneBackend()
         result = backend.authenticate(

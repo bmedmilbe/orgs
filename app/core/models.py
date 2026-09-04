@@ -20,7 +20,6 @@ class CustomUserManager(UserManager.from_queryset(UserQuerySet)):
     pass
 
 
-
 class User(AbstractUser):
     # Username is scoped per-tenant via Meta constraints
     username = models.CharField(max_length=150, unique=False)
@@ -51,14 +50,12 @@ class User(AbstractUser):
                 fields=["username", "tenant"],
                 name="unique_username_per_tenant",
             ),
-
             # 2. Single customer per tenant
             models.UniqueConstraint(
                 fields=["tenant"],
                 condition=models.Q(is_customer=True),
                 name="unique_single_customer_per_tenant",
             ),
-
             # 3. GLOBAL uniqueness for customers across all tenants
             models.UniqueConstraint(
                 fields=["email"],
@@ -75,10 +72,15 @@ class User(AbstractUser):
     def clean(self):
         super().clean()
         if self.is_customer and self.tenant_id:
-            existing_customer = User.objects.filter(tenant=self.tenant, is_customer=True).exclude(pk=self.pk)
+            existing_customer = User.objects.filter(
+                tenant=self.tenant, is_customer=True
+            ).exclude(pk=self.pk)
             if existing_customer.exists():
-                raise ValidationError("A customer already exists for this tenant schema.")
-            
+                raise ValidationError(
+                    "A customer already exists for this tenant schema."
+                )
+
+
 class Client(TenantMixin):
     name = models.CharField(max_length=100)
     paid_until = models.DateField()

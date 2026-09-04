@@ -16,7 +16,7 @@ class TenantAwareTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
-        
+
         cls.tenant = ClientFactory(
             schema_name="test_tenant",
             name="Test Tenant",

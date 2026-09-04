@@ -18,12 +18,12 @@ WHITENOISE_AUTOREFRESH = True
 DATABASES["default"]["TEST"] = {"SERIALIZE": False}
 
 DATABASES = {
-    'default': {
-        'ENGINE': "django_tenants.postgresql_backend",
-        'USER': 'postgres',
-        'HOST': 'orgsdbtest',
-        'PASSWORD': 'postgres',
-        'NAME': 'orgsdbtest',
-        'PORT': '5432',
+    "default": {
+        "ENGINE": "django_tenants.postgresql_backend",
+        "USER": "postgres",
+        "HOST": "orgsdbtest",
+        "PASSWORD": "postgres",
+        "NAME": "orgsdbtest",
+        "PORT": "5432",
     }
 }

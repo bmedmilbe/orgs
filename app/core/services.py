@@ -17,7 +17,6 @@ User = get_user_model()
 
 
 class UserService:
-
     @staticmethod
     @transaction.atomic
     def register_customer_via_bridge(user_data):
@@ -30,18 +29,28 @@ class UserService:
         # 1. Global Pre-validations
         staff_q = Q(is_superuser=True) | Q(is_staff=True)
         if email and User.objects.filter(staff_q, email=email).exists():
-            raise ValidationError({"email": "A staff member with this email address already exists."})
+            raise ValidationError(
+                {"email": "A staff member with this email address already exists."}
+            )
         if phone and User.objects.filter(staff_q, phone=phone).exists():
-            raise ValidationError({"phone": "A staff member with this phone number already exists."})
+            raise ValidationError(
+                {"phone": "A staff member with this phone number already exists."}
+            )
 
         if email and User.objects.filter(is_customer=True, email=email).exists():
-            raise ValidationError({"email": "A customer with this email address already exists."})
+            raise ValidationError(
+                {"email": "A customer with this email address already exists."}
+            )
         if phone and User.objects.filter(is_customer=True, phone=phone).exists():
-            raise ValidationError({"phone": "A customer with this phone number already exists."})
+            raise ValidationError(
+                {"phone": "A customer with this phone number already exists."}
+            )
 
         # 2. Strict Alphanumeric Domain & Schema Generation (No '-' or '_')
         raw_identifier = username or (email.split("@")[0] if email else "customer")
-        clean_identifier = "".join(c for c in raw_identifier if c.isalnum()).lower() or "customer"
+        clean_identifier = (
+            "".join(c for c in raw_identifier if c.isalnum()).lower() or "customer"
+        )
         clean_identifier = clean_identifier[:5]
         suffix = secrets.token_hex(4)  # Generates pure hex (e.g., 'a1b2c3d4')
         full_domain = f"{clean_identifier}{suffix}.{settings.PUBLIC_DOMAIN}"
@@ -49,13 +58,18 @@ class UserService:
 
         # 3. Create Tenant, Domain, and customer User within the PUBLIC schema
         with schema_context("public"):
-            while Domain.objects.filter(domain=full_domain).exists() or Client.objects.filter(schema_name=schema_name).exists():
+            while (
+                Domain.objects.filter(domain=full_domain).exists()
+                or Client.objects.filter(schema_name=schema_name).exists()
+            ):
                 suffix = secrets.token_hex(4)
                 full_domain = f"{clean_identifier}{suffix}.{settings.PUBLIC_DOMAIN}"
                 schema_name = f"{clean_identifier}{suffix}"
 
             # Create Tenant
-            display_name = f"{first_name} {last_name}".strip() or username or email or phone
+            display_name = (
+                f"{first_name} {last_name}".strip() or username or email or phone
+            )
             tenant = Client.objects.create(
                 schema_name=schema_name,
                 name=f"{display_name}'s Space",
@@ -83,6 +97,7 @@ class UserService:
             )
 
         return user
+
     @staticmethod
     def register_customer_via_tenant(request, user_data):
         """
@@ -90,17 +105,23 @@ class UserService:
         Validates username uniqueness scoped strictly to request.tenant.
         """
         if getattr(request, "domain_type", None) != DomainType.TENANT:
-            raise ValidationError("Customer accounts can only be registered on a customer's private domain.")
+            raise ValidationError(
+                "Customer accounts can only be registered on a customer's private domain."
+            )
 
         tenant = request.tenant
         username = user_data.get("username", user_data.get("email"))
 
         if user_data.get("is_customer", False):
-            raise ValidationError("customers cannot be registered within a private tenant domain.")
+            raise ValidationError(
+                "customers cannot be registered within a private tenant domain."
+            )
 
         # Check username uniqueness for THIS specific tenant space
         if User.objects.filter(tenant=tenant, username=username).exists():
-            raise ValidationError({"username": "This username is already taken in this space."})
+            raise ValidationError(
+                {"username": "This username is already taken in this space."}
+            )
 
         user = User.objects.create_user(
             email=user_data["email"],

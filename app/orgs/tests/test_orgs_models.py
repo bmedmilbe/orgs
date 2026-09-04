@@ -64,24 +64,23 @@ User = get_user_model()
 # 1. CORE & USER MODULE TESTS
 # ==========================================
 
+
 class TestCustomerModel(TenantAwareTestCase):
     def test_customer_creation(self):
         with tenant_context(self.tenant):
             customer = CustomerFactory(
-                user__username="testuser",
-                user__tenant=self.tenant,
-                domain=None
+                user__username="testuser", user__tenant=self.tenant, domain=None
             )
             assert customer.user.username == "testuser"
             assert customer.domain is None
-            assert str(customer) == f"{customer.user.first_name} {customer.user.last_name}"
+            assert (
+                str(customer) == f"{customer.user.first_name} {customer.user.last_name}"
+            )
 
     def test_customer_domain_nullable(self):
         with tenant_context(self.tenant):
             customer = CustomerFactory(
-                user__username="testuser2",
-                user__tenant=self.tenant,
-                domain=None
+                user__username="testuser2", user__tenant=self.tenant, domain=None
             )
             assert customer.domain is None
 
@@ -89,6 +88,7 @@ class TestCustomerModel(TenantAwareTestCase):
 # ==========================================
 # 2. DYNAMIC CONTENT & PAGE BUILDER TESTS
 # ==========================================
+
 
 class TestPageModel(TenantAwareTestCase):
     def test_page_creation(self):
@@ -105,7 +105,7 @@ class TestPageModel(TenantAwareTestCase):
             PageFactory(title="Home", slug="home", order=1)
             PageFactory(title="About", slug="about", order=2)
             PageFactory(title="Contact", slug="contact", order=0)
-            
+
             pages = Page.objects.all().order_by("order")
             assert pages[0].order == 0
             assert pages[0].title == "Contact"
@@ -131,9 +131,13 @@ class TestPageContentBlockModel(TenantAwareTestCase):
     def test_block_ordering(self):
         with tenant_context(self.tenant):
             page = PageFactory()
-            PageContentBlockFactory(page=page, block_type="hero", title="Hero Banner", order=0)
-            PageContentBlockFactory(page=page, block_type="text", title="Text Section", order=1)
-            
+            PageContentBlockFactory(
+                page=page, block_type="hero", title="Hero Banner", order=0
+            )
+            PageContentBlockFactory(
+                page=page, block_type="text", title="Text Section", order=1
+            )
+
             blocks = PageContentBlock.objects.filter(page=page).order_by("order")
             assert blocks[0].order == 0
             assert blocks[0].block_type == "hero"
@@ -144,6 +148,7 @@ class TestPageContentBlockModel(TenantAwareTestCase):
 # ==========================================
 # 3. METRICS & GOALS TESTS
 # ==========================================
+
 
 class TestYearGoalModel(TenantAwareTestCase):
     def test_year_goal_creation(self):
@@ -165,6 +170,7 @@ class TestYearGoalModel(TenantAwareTestCase):
 # 4. ASSOCIATIONS & NETWORK TESTS
 # ==========================================
 
+
 class TestDistrictModel(TenantAwareTestCase):
     def test_district_creation(self):
         with tenant_context(self.tenant):
@@ -178,9 +184,7 @@ class TestAssociationModel(TenantAwareTestCase):
         with tenant_context(self.tenant):
             district = DistrictFactory()
             association = AssociationFactory(
-                name="CECAB North",
-                district=district,
-                number_of_associated=150
+                name="CECAB North", district=district, number_of_associated=150
             )
             assert association.name == "CECAB North"
             assert association.district.name == district.name
@@ -207,6 +211,7 @@ class TestAssociationImageModel(TenantAwareTestCase):
 # ==========================================
 # 5. CATALOGUE & ECO-TOURISM TESTS
 # ==========================================
+
 
 class TestCategoryModel(TenantAwareTestCase):
     def test_category_creation(self):
@@ -245,9 +250,7 @@ class TestCatalogItemSpecificationModel(TenantAwareTestCase):
         with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory()
             spec = CatalogItemSpecificationFactory(
-                item=catalog_item,
-                key="Certification",
-                value="Fairtrade"
+                item=catalog_item, key="Certification", value="Fairtrade"
             )
             assert spec.item.name == catalog_item.name
             assert spec.key == "Certification"
@@ -257,6 +260,7 @@ class TestCatalogItemSpecificationModel(TenantAwareTestCase):
 # ==========================================
 # 6. POSTS, BLOG & NEWS TESTS
 # ==========================================
+
 
 class TestBlogCategoryModel(TenantAwareTestCase):
     def test_blog_category_creation(self):
@@ -343,6 +347,7 @@ class TestPostImageModel(TenantAwareTestCase):
 # 7. MULTIMEDIA & COMMUNICATIONS TESTS
 # ==========================================
 
+
 class TestVideoModel(TenantAwareTestCase):
     def test_video_creation(self):
         with tenant_context(self.tenant):
@@ -390,6 +395,7 @@ class TestMessageModel(TenantAwareTestCase):
 # PARTNER MODULE TESTS
 # ==========================================
 
+
 class TestPartnerModel(TenantAwareTestCase):
     def test_partner_creation(self):
         with tenant_context(self.tenant):
@@ -401,6 +407,7 @@ class TestPartnerModel(TenantAwareTestCase):
 # ==========================================
 # 8. CORPORATE GOVERNANCE & TEAM TESTS
 # ==========================================
+
 
 class TestRoleModel(TenantAwareTestCase):
     def test_role_creation(self):
@@ -432,6 +439,7 @@ class TestTeamModel(TenantAwareTestCase):
 # 9. GENERAL DOCUMENTATION TESTS
 # ==========================================
 
+
 class TestBudgetModel(TenantAwareTestCase):
     def test_budget_creation(self):
         with tenant_context(self.tenant):
@@ -451,9 +459,7 @@ class TestExtraDocModel(TenantAwareTestCase):
     def test_extra_doc_creation(self):
         with tenant_context(self.tenant):
             extra_doc = ExtraDocFactory(
-                title="Quality Certificate",
-                slug="quality-cert",
-                active=True
+                title="Quality Certificate", slug="quality-cert", active=True
             )
             assert extra_doc.title == "Quality Certificate"
             assert extra_doc.active is True
@@ -487,6 +493,7 @@ class TestInformationModel(TenantAwareTestCase):
 # ==========================================
 # REVIEW MODEL TESTS
 # ==========================================
+
 
 class TestReviewModel(TenantAwareTestCase):
     def test_review_creation(self):
@@ -595,26 +602,24 @@ class TestReviewModel(TenantAwareTestCase):
 
 
 class TestReviewModelCounting(TenantAwareTestCase):
-    
     def test_review_multiple_ratings(self):
         # Define your test cases inside a dictionary or list of tuples
         test_cases = [
-            {"ratings":[5, 4, 3], "expected_avg": 4.0, "expected_count": 3},
-            {"ratings":[5, 5], "expected_avg": 5.0, "expected_count": 2},
-            {"ratings":[1], "expected_avg": 1.0, "expected_count": 1},
+            {"ratings": [5, 4, 3], "expected_avg": 4.0, "expected_count": 3},
+            {"ratings": [5, 5], "expected_avg": 5.0, "expected_count": 2},
+            {"ratings": [1], "expected_avg": 1.0, "expected_count": 1},
         ]
 
-        
         with tenant_context(self.tenant):
             for count, case in enumerate(test_cases, start=1):
                 catalog_item = CatalogItemFactory()
 
                 for i, rating in enumerate(case["ratings"]):
                     user = UserFactory(
-                        username=f"reviewer_{i}_{count}_{rating}",  
-                        email=f"reviewer@hot_{i}_{count}_{rating}.com",  
+                        username=f"reviewer_{i}_{count}_{rating}",
+                        email=f"reviewer@hot_{i}_{count}_{rating}.com",
                         password="testpass123",
-                        tenant=self.tenant
+                        tenant=self.tenant,
                     )
                     ReviewFactory(
                         item=catalog_item,
@@ -627,22 +632,27 @@ class TestReviewModelCounting(TenantAwareTestCase):
                 catalog_item.refresh_from_db()
 
                 from decimal import Decimal
+
                 assert catalog_item.average_rating == Decimal(str(case["expected_avg"]))
                 assert catalog_item.total_reviews == case["expected_count"]
-
 
 
 # ==========================================
 # RELATIONSHIP AND INTEGRATION TESTS
 # ==========================================
 
+
 class TestRelationships(TenantAwareTestCase):
     def test_page_content_block_relationship(self):
         with tenant_context(self.tenant):
             page = PageFactory()
-            PageContentBlockFactory(page=page, block_type="text", title="Block 1", order=1)
-            PageContentBlockFactory(page=page, block_type="hero", title="Block 2", order=2)
-            
+            PageContentBlockFactory(
+                page=page, block_type="text", title="Block 1", order=1
+            )
+            PageContentBlockFactory(
+                page=page, block_type="hero", title="Block 2", order=2
+            )
+
             blocks = page.blocks.all()
             assert blocks.count() == 2
             assert blocks[0].title == "Block 1"
@@ -651,9 +661,13 @@ class TestRelationships(TenantAwareTestCase):
     def test_catalog_item_specification_relationship(self):
         with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory()
-            CatalogItemSpecificationFactory(item=catalog_item, key="Certification", value="Fairtrade")
-            CatalogItemSpecificationFactory(item=catalog_item, key="Origin", value="Ghana")
-            
+            CatalogItemSpecificationFactory(
+                item=catalog_item, key="Certification", value="Fairtrade"
+            )
+            CatalogItemSpecificationFactory(
+                item=catalog_item, key="Origin", value="Ghana"
+            )
+
             specs = catalog_item.specifications.all()
             assert specs.count() == 2
 
@@ -662,7 +676,7 @@ class TestRelationships(TenantAwareTestCase):
             association = AssociationFactory()
             AssociationImageFactory(association=association)
             AssociationImageFactory(association=association)
-            
+
             images = association.cms_images.all()
             assert images.count() == 2
 
@@ -672,7 +686,7 @@ class TestRelationships(TenantAwareTestCase):
             video = VideoFactory()
             PostVideoFactory(post=post, video=video)
             PostVideoFactory(post=post, video=VideoFactory())
-            
+
             assert post.post_videos.count() == 2
             assert video.post_videos.count() == 1
 
@@ -681,13 +695,14 @@ class TestRelationships(TenantAwareTestCase):
             post = PostFactory()
             InformationFactory(service=post, question="Q1", information="A1")
             InformationFactory(service=post, question="Q2", information="A2")
-            
+
             assert post.informations.count() == 2
 
 
 # ==========================================
 # CUSTOM QUERYSET TESTS
 # ==========================================
+
 
 class TestCustomQuerySets(TenantAwareTestCase):
     def test_customer_optimized_queryset(self):
@@ -716,6 +731,7 @@ class TestCustomQuerySets(TenantAwareTestCase):
 # MODEL FIELD AND CONSTRAINT TESTS
 # ==========================================
 
+
 class TestModelConstraints(TenantAwareTestCase):
     def test_slug_uniqueness_page(self):
         with tenant_context(self.tenant):
@@ -740,6 +756,7 @@ class TestModelConstraints(TenantAwareTestCase):
 # FILE UPLOAD FIELD TESTS
 # ==========================================
 
+
 class TestFileUploads(TenantAwareTestCase):
     def test_image_file_upload(self):
         with tenant_context(self.tenant):
@@ -757,9 +774,7 @@ class TestFileUploads(TenantAwareTestCase):
         with tenant_context(self.tenant):
             blog_category = BlogCategoryFactory()
             post = PostFactory(
-                blog_category=blog_category,
-                title="Test Post",
-                slug="test-post"
+                blog_category=blog_category, title="Test Post", slug="test-post"
             )
             assert post.text_file is not None
             assert post.text_file.name.startswith("orgs_api/cms/posts/documents/")
@@ -786,6 +801,7 @@ class TestFileUploads(TenantAwareTestCase):
 # ==========================================
 # EDGE CASES AND BOUNDARY TESTS
 # ==========================================
+
 
 class TestEdgeCases(TenantAwareTestCase):
     def test_year_goal_decimal_precision(self):
@@ -843,6 +859,7 @@ class TestEdgeCases(TenantAwareTestCase):
 # PERFORMANCE AND OPTIMIZATION TESTS
 # ==========================================
 
+
 class TestPerformance(TenantAwareTestCase):
     def test_bulk_create_reviews(self):
         with tenant_context(self.tenant):
@@ -850,7 +867,9 @@ class TestPerformance(TenantAwareTestCase):
             users = []
             for i in range(10):
                 user = UserFactory(
-                    username=f"bulk_user_{i}", password="testpass123", tenant=self.tenant
+                    username=f"bulk_user_{i}",
+                    password="testpass123",
+                    tenant=self.tenant,
                 )
                 users.append(user)
 
@@ -880,13 +899,14 @@ class TestPerformance(TenantAwareTestCase):
 # MODEL META CLASS TESTS
 # ==========================================
 
+
 class TestModelMeta(TenantAwareTestCase):
     def test_page_meta_ordering(self):
         with tenant_context(self.tenant):
             PageFactory(title="Home", slug="home", order=3)
             PageFactory(title="About", slug="about", order=1)
             PageFactory(title="Contact", slug="contact", order=2)
-            
+
             pages = Page.objects.all()
             assert pages[0].title == "About"
             assert pages[1].title == "Contact"
@@ -915,7 +935,7 @@ class TestModelMeta(TenantAwareTestCase):
                 comment="Newer review",
                 is_approved=True,
             )
-            
+
             reviews = Review.objects.all()
             assert reviews[0].id == review2.id
             assert reviews[1].id == review1.id
@@ -928,11 +948,14 @@ class TestModelMeta(TenantAwareTestCase):
 # TEST COVERAGE FOR ALL STRING REPRESENTATIONS
 # ==========================================
 
+
 class TestStringRepresentations(TenantAwareTestCase):
     def test_all_model_str_methods(self):
         with tenant_context(self.tenant):
             # Create all objects using factories
-            customer = CustomerFactory(user__username="testuser", user__tenant=self.tenant)
+            customer = CustomerFactory(
+                user__username="testuser", user__tenant=self.tenant
+            )
             page = PageFactory()
             district = DistrictFactory()
             association = AssociationFactory(district=district)

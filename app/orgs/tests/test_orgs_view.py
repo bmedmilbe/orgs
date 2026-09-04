@@ -83,6 +83,7 @@ def get_authenticated_request(method, path, user, data=None, format="json"):
 # 1. CORE & USER MODULE VIEW TESTS
 # ==========================================
 
+
 class TestCustomerViewSet(TenantAwareTestCase):  # ✅ Use TenantAwareTestCase
     def test_list_customers(self):
         with tenant_context(self.tenant):  # ✅ Use self.tenant
@@ -126,6 +127,7 @@ class TestCustomerViewSet(TenantAwareTestCase):  # ✅ Use TenantAwareTestCase
 # ==========================================
 # 2. DYNAMIC CONTENT & PAGE BUILDER VIEW TESTS
 # ==========================================
+
 
 class TestPageViewSet(TenantAwareTestCase):
     def test_list_pages(self):
@@ -182,6 +184,7 @@ class TestPageViewSet(TenantAwareTestCase):
 # ==========================================
 # 3. METRICS & GOALS VIEW TESTS
 # ==========================================
+
 
 class TestYearGoalViewSet(TenantAwareTestCase):
     def test_list_year_goals(self):
@@ -245,6 +248,7 @@ class TestYearGoalViewSet(TenantAwareTestCase):
 # ==========================================
 # 4. ASSOCIATIONS & NETWORK VIEW TESTS
 # ==========================================
+
 
 class TestDistrictViewSet(TenantAwareTestCase):
     def test_list_districts(self):
@@ -342,6 +346,7 @@ class TestAssociationViewSet(TenantAwareTestCase):
 # ==========================================
 # 5. CATALOGUE & ECO-TOURISM VIEW TESTS
 # ==========================================
+
 
 class TestCategoryViewSet(TenantAwareTestCase):
     def test_list_categories(self):
@@ -451,6 +456,7 @@ class TestCatalogItemViewSet(TenantAwareTestCase):
 # ==========================================
 # 6. POSTS, BLOG & NEWS VIEW TESTS
 # ==========================================
+
 
 class TestBlogCategoryViewSet(TenantAwareTestCase):
     def test_list_blog_categories(self):
@@ -618,6 +624,7 @@ class TestPostViewSet(TenantAwareTestCase):
 # 7. MULTIMEDIA & COMMUNICATIONS VIEW TESTS
 # ==========================================
 
+
 class TestVideoViewSet(TenantAwareTestCase):
     def test_list_videos(self):
         with tenant_context(self.tenant):
@@ -766,6 +773,7 @@ class TestPartnerViewSet(TenantAwareTestCase):
 # 8. CORPORATE GOVERNANCE & TEAM VIEW TESTS
 # ==========================================
 
+
 class TestRoleViewSet(TenantAwareTestCase):
     def test_list_roles(self):
         with tenant_context(self.tenant):
@@ -861,6 +869,7 @@ class TestTeamViewSet(TenantAwareTestCase):
 # ==========================================
 # 9. GENERAL DOCUMENTATION VIEW TESTS
 # ==========================================
+
 
 class TestBudgetViewSet(TenantAwareTestCase):
     def test_list_budgets(self):
@@ -971,6 +980,7 @@ class TestExtraDocViewSet(TenantAwareTestCase):
 # ==========================================
 # 10. REVIEW VIEW TESTS
 # ==========================================
+
 
 class TestReviewViewSet(TenantAwareTestCase):
     def test_list_reviews(self):
@@ -1187,6 +1197,7 @@ class TestReviewViewSet(TenantAwareTestCase):
 # ==========================================
 # 11. VIEW PERMISSION TESTS
 # ==========================================
+
 
 class TestViewPermissions(TenantAwareTestCase):
     def test_readonly_views_allow_unauthenticated(self):

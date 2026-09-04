@@ -27,7 +27,7 @@ class TenantMiddleware:
         # 1. Determine Domain Type
         public_domains = [getattr(settings, "PUBLIC_DOMAIN", "")]
         bridge_domains = [getattr(settings, "BRIDGE_DOMAIN", "")]
-        
+
         if host in public_domains:
             request.domain_type = DomainType.ROOT
         elif host in bridge_domains:
@@ -53,5 +53,7 @@ class TenantMiddleware:
             connection.set_tenant(request.tenant)
             return self.get_response(request)
 
-        logger.warning(f"Access Denied: Unmapped domain route detected for Host '{host}'")
+        logger.warning(
+            f"Access Denied: Unmapped domain route detected for Host '{host}'"
+        )
         raise Http404("Tenant or domain space not found.")

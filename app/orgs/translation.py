@@ -20,57 +20,88 @@ from .models import (
 
 @register(PageContentBlock)
 class PageContentBlockTranslationOptions(TranslationOptions):
-    fields = ('title', 'content',)
+    fields = (
+        "title",
+        "content",
+    )
+
 
 @register(Page)
 class PageTranslationOptions(TranslationOptions):
-    fields = ('title',)
+    fields = ("title",)
+
 
 @register(YearGoal)
 class YearGoalTranslationOptions(TranslationOptions):
-    fields = ('label',)
+    fields = ("label",)
+
 
 @register(Association)
 class AssociationTranslationOptions(TranslationOptions):
-    fields = ('name', 'address',)
+    fields = (
+        "name",
+        "address",
+    )
+
 
 @register(Category)
 class CategoryTranslationOptions(TranslationOptions):
-    fields = ('name',)
+    fields = ("name",)
+
 
 @register(CatalogItem)
 class CatalogItemTranslationOptions(TranslationOptions):
-    fields = ('name', 'description',)
+    fields = (
+        "name",
+        "description",
+    )
+
 
 @register(CatalogItemSpecification)
 class CatalogItemSpecificationTranslationOptions(TranslationOptions):
-    fields = ('key', 'value',)
+    fields = (
+        "key",
+        "value",
+    )
+
 
 @register(Post)
 class PostTranslationOptions(TranslationOptions):
-    fields = ('title', 'description', 'text',)
+    fields = (
+        "title",
+        "description",
+        "text",
+    )
+
 
 @register(Video)
 class VideoTranslationOptions(TranslationOptions):
-    fields = ('title',)
+    fields = ("title",)
+
 
 @register(Role)
 class RoleTranslationOptions(TranslationOptions):
-    fields = ('title',)
+    fields = ("title",)
+
 
 @register(Budget)
 class BudgetTranslationOptions(TranslationOptions):
-    fields = ('title',)
+    fields = ("title",)
+
 
 @register(ExtraDoc)
 class ExtraDocTranslationOptions(TranslationOptions):
-    fields = ('title',)
+    fields = ("title",)
+
 
 @register(Information)
 class InformationTranslationOptions(TranslationOptions):
-    fields = ('question', 'information',)
+    fields = (
+        "question",
+        "information",
+    )
+
 
 @register(BlogCategory)
 class BlogCategoryTranslationOptions(TranslationOptions):
-    fields = ('name',)
-
+    fields = ("name",)

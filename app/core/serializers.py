@@ -1,5 +1,3 @@
-
-
 from django.contrib.auth import authenticate, get_user_model
 from django.utils.translation import gettext_lazy as _
 from djoser.serializers import (
@@ -16,11 +14,12 @@ from core.services import UserService
 User = get_user_model()
 
 
-
 class TenantJWTCreateSerializer(TokenObtainPairSerializer):
     # Flexible field accepting either email or phone
     login_identifier = serializers.CharField(required=True)
-    password = serializers.CharField(style={'input_type': 'password'}, trim_whitespace=False, required=True)
+    password = serializers.CharField(
+        style={"input_type": "password"}, trim_whitespace=False, required=True
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -33,9 +32,9 @@ class TenantJWTCreateSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
 
         # Inject custom multi-tenant claims into the encrypted payload
-        if hasattr(user, 'tenant') and user.tenant is not None:
-            token['tenant_id'] = user.tenant.id # Safe lookup from user instance
-            
+        if hasattr(user, "tenant") and user.tenant is not None:
+            token["tenant_id"] = user.tenant.id  # Safe lookup from user instance
+
         return token
 
     def validate(self, attrs):
@@ -44,21 +43,23 @@ class TenantJWTCreateSerializer(TokenObtainPairSerializer):
         request = self.context.get("request")
 
         # Delegate lookup to TenantEmailOrPhoneBackend via 'username'
-        user = authenticate(request=request, username=login_identifier, password=password)
+        user = authenticate(
+            request=request, username=login_identifier, password=password
+        )
 
         if not user:
-            raise serializers.ValidationError(_("Unable to log in with provided credentials."))
+            raise serializers.ValidationError(
+                _("Unable to log in with provided credentials.")
+            )
 
         # Populate the validation payload required by Simple JWT
         data = {}
         refresh = self.get_token(user)
-        
+
         data["refresh"] = str(refresh)
         data["access"] = str(refresh.access_token)
-        
+
         return data
-
-
 
 
 class TenantUserCreateSerializer(UserCreateSerializer):
@@ -105,8 +106,11 @@ class TenantUserCreateSerializer(UserCreateSerializer):
             )
 
         else:
-            raise serializers.ValidationError("Direct user creation is disabled on the Root Domain endpoint.")
-    
+            raise serializers.ValidationError(
+                "Direct user creation is disabled on the Root Domain endpoint."
+            )
+
+
 class TenantSetPasswordSerializer(SetPasswordSerializer):
     """Handles password changes for logged-in users under /auth/users/set_password/"""
 
@@ -153,5 +157,3 @@ class TenantPasswordResetConfirmSerializer(PasswordResetConfirmSerializer):
             )
 
         return attrs
-
-

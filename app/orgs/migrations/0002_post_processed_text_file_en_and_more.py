@@ -4,40 +4,75 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('orgs', '0001_initial'),
+        ("orgs", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='post',
-            name='processed_text_file_en',
-            field=models.FileField(blank=True, max_length=500, null=True, upload_to='orgs_api/cms/posts/processed/en/', verbose_name='Processed English JSON'),
+            model_name="post",
+            name="processed_text_file_en",
+            field=models.FileField(
+                blank=True,
+                max_length=500,
+                null=True,
+                upload_to="orgs_api/cms/posts/processed/en/",
+                verbose_name="Processed English JSON",
+            ),
         ),
         migrations.AddField(
-            model_name='post',
-            name='processed_text_file_fr',
-            field=models.FileField(blank=True, max_length=500, null=True, upload_to='orgs_api/cms/posts/processed/fr/', verbose_name='Processed French JSON'),
+            model_name="post",
+            name="processed_text_file_fr",
+            field=models.FileField(
+                blank=True,
+                max_length=500,
+                null=True,
+                upload_to="orgs_api/cms/posts/processed/fr/",
+                verbose_name="Processed French JSON",
+            ),
         ),
         migrations.AddField(
-            model_name='post',
-            name='processed_text_file_pt',
-            field=models.FileField(blank=True, max_length=500, null=True, upload_to='orgs_api/cms/posts/processed/pt/', verbose_name='Processed Portuguese JSON'),
+            model_name="post",
+            name="processed_text_file_pt",
+            field=models.FileField(
+                blank=True,
+                max_length=500,
+                null=True,
+                upload_to="orgs_api/cms/posts/processed/pt/",
+                verbose_name="Processed Portuguese JSON",
+            ),
         ),
         migrations.AddField(
-            model_name='post',
-            name='text_file_en',
-            field=models.FileField(blank=True, max_length=500, null=True, upload_to='orgs_api/cms/posts/documents/en/', verbose_name='English Document (DOCX)'),
+            model_name="post",
+            name="text_file_en",
+            field=models.FileField(
+                blank=True,
+                max_length=500,
+                null=True,
+                upload_to="orgs_api/cms/posts/documents/en/",
+                verbose_name="English Document (DOCX)",
+            ),
         ),
         migrations.AddField(
-            model_name='post',
-            name='text_file_fr',
-            field=models.FileField(blank=True, max_length=500, null=True, upload_to='orgs_api/cms/posts/documents/fr/', verbose_name='French Document (DOCX)'),
+            model_name="post",
+            name="text_file_fr",
+            field=models.FileField(
+                blank=True,
+                max_length=500,
+                null=True,
+                upload_to="orgs_api/cms/posts/documents/fr/",
+                verbose_name="French Document (DOCX)",
+            ),
         ),
         migrations.AddField(
-            model_name='post',
-            name='text_file_pt',
-            field=models.FileField(blank=True, max_length=500, null=True, upload_to='orgs_api/cms/posts/documents/pt/', verbose_name='Portuguese Document (DOCX)'),
+            model_name="post",
+            name="text_file_pt",
+            field=models.FileField(
+                blank=True,
+                max_length=500,
+                null=True,
+                upload_to="orgs_api/cms/posts/documents/pt/",
+                verbose_name="Portuguese Document (DOCX)",
+            ),
         ),
     ]

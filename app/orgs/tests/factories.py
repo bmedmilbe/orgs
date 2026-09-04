@@ -84,7 +84,7 @@ def generate_doc(title="text.docx"):
 class ClientFactory(DjangoModelFactory):
     class Meta:
         model = Client
-        django_get_or_create = ["schema_name"]  
+        django_get_or_create = ["schema_name"]
 
     schema_name = factory.Sequence(lambda n: f"tenant_{n}")
     name = factory.Sequence(lambda n: f"Tenant Corp {n}")

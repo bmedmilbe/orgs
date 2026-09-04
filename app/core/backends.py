@@ -9,7 +9,6 @@ User = get_user_model()
 
 
 class TenantEmailOrPhoneBackend(ModelBackend):
-
     def authenticate(self, request, username=None, password=None, **kwargs):
         identifier = (
             username
@@ -21,7 +20,7 @@ class TenantEmailOrPhoneBackend(ModelBackend):
             return None
 
         domain_type = getattr(request, "domain_type", None)
-        
+
         current_tenant = request.tenant
 
         # Base query for lookup by email, phone, or username
@@ -33,23 +32,14 @@ class TenantEmailOrPhoneBackend(ModelBackend):
             # Only superusers/staff belonging to the public/root tenant
             # =================================================================
             if domain_type == DomainType.ROOT:
-             
-                user = User.objects.get(
-                    lookup,
-                    Q(is_superuser=True) | Q(is_staff = True)
-                )
-               
-                
+                user = User.objects.get(lookup, Q(is_superuser=True) | Q(is_staff=True))
 
             # =================================================================
             # RULE 2B: BRIDGE DOMAIN LOGIN
             # Only registered customers (is_customer = True) can authenticate
             # =================================================================
             elif domain_type == DomainType.BRIDGE:
-                user = User.objects.get(
-                    lookup,
-                    is_customer=True
-                )
+                user = User.objects.get(lookup, is_customer=True)
 
             # =================================================================
             # RULE 2C: PRIVATE TENANT DOMAIN LOGIN
