@@ -43,16 +43,17 @@ faker = "*"
 [dev-packages]
 # Linters & Formatters
 autopep8 = "==2.3.2"
-ruff = "==0.15.14"
 
 # Automated Testing Suite & Factories
-pytest = "*"
-pytest-django = "*"
-pytest-xdist = "*"
-pytest-cov = "*"
-factory-boy = "*"
-pytest-factoryboy = "*"
 django-debug-toolbar = "*"
+pytest-django = "*"
+pytest-cov = "*"
+dj-inmemorystorage = "*"
+pytest-xdist = "*"
+factory-boy = "*"
+faker = "*"
+ruff = "*"
+pytest = "*"
 
 [requires]
 python_version = "3.10"
