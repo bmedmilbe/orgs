@@ -1,4 +1,4 @@
-# tests/test_models.py
+# orgs/tests/test_orgs_models.py
 
 from decimal import Decimal
 
@@ -6,7 +6,8 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
-from django.test import TestCase
+
+# ❌ REMOVE: from django_tenants.test.cases import TenantTestCase
 from django_tenants.utils import tenant_context
 
 from orgs.models import (
@@ -19,6 +20,9 @@ from orgs.models import (
     Post,
     Review,
 )
+
+# ✅ IMPORT: Your base class
+from orgs.tests.base import TenantAwareTestCase
 from orgs.tests.factories import (
     AssociationFactory,
     AssociationImageFactory,
@@ -29,7 +33,6 @@ from orgs.tests.factories import (
     CatalogItemSpecificationFactory,
     CategoryFactory,
     CategoryFactorySingle,
-    ClientFactory,
     CustomerFactory,
     DistrictFactory,
     ExtraDocFactory,
@@ -61,25 +64,24 @@ User = get_user_model()
 # 1. CORE & USER MODULE TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestCustomerModel(TestCase):
+class TestCustomerModel(TenantAwareTestCase):
     def test_customer_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
-            customer = CustomerFactory(user__username="testuser", user__tenant=client)
-
+        with tenant_context(self.tenant):
+            customer = CustomerFactory(
+                user__username="testuser",
+                user__tenant=self.tenant,
+                domain=None
+            )
             assert customer.user.username == "testuser"
             assert customer.domain is None
-            assert (
-                str(customer) == f"{customer.user.first_name} {customer.user.last_name}"
-            )
+            assert str(customer) == f"{customer.user.first_name} {customer.user.last_name}"
 
     def test_customer_domain_nullable(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             customer = CustomerFactory(
-                user__username="testuser", user__tenant=client, domain=None
+                user__username="testuser2",
+                user__tenant=self.tenant,
+                domain=None
             )
             assert customer.domain is None
 
@@ -88,12 +90,9 @@ class TestCustomerModel(TestCase):
 # 2. DYNAMIC CONTENT & PAGE BUILDER TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestPageModel(TestCase):
+class TestPageModel(TenantAwareTestCase):
     def test_page_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             page = PageFactory(title="Home", slug="home", active=True, order=1)
             assert page.title == "Home"
             assert page.slug == "home"
@@ -102,22 +101,19 @@ class TestPageModel(TestCase):
             assert str(page) == "Home"
 
     def test_page_ordering(self):
-        client = ClientFactory()
-        with tenant_context(client):
-            page1 = PageFactory(title="Home", slug="home", order=1)
-            page2 = PageFactory(title="About", slug="about", order=2)
-            page3 = PageFactory(title="Contact", slug="contact", order=0)
-
-            pages = Page.objects.all()
+        with tenant_context(self.tenant):
+            PageFactory(title="Home", slug="home", order=1)
+            PageFactory(title="About", slug="about", order=2)
+            PageFactory(title="Contact", slug="contact", order=0)
+            
+            pages = Page.objects.all().order_by("order")
             assert pages[0].order == 0
             assert pages[0].title == "Contact"
 
 
-@pytest.mark.django_db
-class TestPageContentBlockModel(TestCase):
+class TestPageContentBlockModel(TenantAwareTestCase):
     def test_block_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             page = PageFactory()
             block = PageContentBlockFactory(
                 page=page,
@@ -133,17 +129,12 @@ class TestPageContentBlockModel(TestCase):
             assert str(block) == f"{page.title} - text (Welcome Section)"
 
     def test_block_ordering(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             page = PageFactory()
-            block1 = PageContentBlockFactory(
-                page=page, block_type="hero", title="Hero Banner", order=0
-            )
-            block2 = PageContentBlockFactory(
-                page=page, block_type="text", title="Text Section", order=1
-            )
-
-            blocks = PageContentBlock.objects.filter(page=page)
+            PageContentBlockFactory(page=page, block_type="hero", title="Hero Banner", order=0)
+            PageContentBlockFactory(page=page, block_type="text", title="Text Section", order=1)
+            
+            blocks = PageContentBlock.objects.filter(page=page).order_by("order")
             assert blocks[0].order == 0
             assert blocks[0].block_type == "hero"
             assert blocks[1].order == 1
@@ -154,12 +145,9 @@ class TestPageContentBlockModel(TestCase):
 # 3. METRICS & GOALS TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestYearGoalModel(TestCase):
+class TestYearGoalModel(TenantAwareTestCase):
     def test_year_goal_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             goal = YearGoalFactory(
                 year=2025,
                 label="Chocolate Produced",
@@ -177,25 +165,22 @@ class TestYearGoalModel(TestCase):
 # 4. ASSOCIATIONS & NETWORK TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestDistrictModel(TestCase):
+class TestDistrictModel(TenantAwareTestCase):
     def test_district_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             district = DistrictFactory(name="North Region")
             assert district.name == "North Region"
             assert str(district) == "North Region"
 
 
-@pytest.mark.django_db
-class TestAssociationModel(TestCase):
+class TestAssociationModel(TenantAwareTestCase):
     def test_association_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             district = DistrictFactory()
             association = AssociationFactory(
-                name="CECAB North", district=district, number_of_associated=150
+                name="CECAB North",
+                district=district,
+                number_of_associated=150
             )
             assert association.name == "CECAB North"
             assert association.district.name == district.name
@@ -203,18 +188,16 @@ class TestAssociationModel(TestCase):
             assert str(association) == "CECAB North"
 
     def test_association_optimized_query(self):
-        client = ClientFactory()
-        with tenant_context(client):
-            association = AssociationFactory()
+        with tenant_context(self.tenant):
+            district = DistrictFactory()
+            association = AssociationFactory(district=district)
             queried = Association.objects.optimized().get(id=association.id)
             assert queried.district.name == association.district.name
 
 
-@pytest.mark.django_db
-class TestAssociationImageModel(TestCase):
+class TestAssociationImageModel(TenantAwareTestCase):
     def test_association_image_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             association = AssociationFactory()
             img = AssociationImageFactory(association=association)
             assert img.association.name == association.name
@@ -225,23 +208,18 @@ class TestAssociationImageModel(TestCase):
 # 5. CATALOGUE & ECO-TOURISM TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestCategoryModel(TestCase):
+class TestCategoryModel(TenantAwareTestCase):
     def test_category_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             category = CategoryFactory(name="Chocolates", slug="chocolates")
             assert category.name == "Chocolates"
             assert category.slug == "chocolates"
             assert str(category) == "Chocolates"
 
 
-@pytest.mark.django_db
-class TestCatalogItemModel(TestCase):
+class TestCatalogItemModel(TenantAwareTestCase):
     def test_catalog_item_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             category = CategoryFactory()
             catalog_item = CatalogItemFactory(
                 category=category,
@@ -262,14 +240,14 @@ class TestCatalogItemModel(TestCase):
             assert str(catalog_item) == "Dark Chocolate"
 
 
-@pytest.mark.django_db
-class TestCatalogItemSpecificationModel(TestCase):
+class TestCatalogItemSpecificationModel(TenantAwareTestCase):
     def test_specification_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory()
             spec = CatalogItemSpecificationFactory(
-                item=catalog_item, key="Certification", value="Fairtrade"
+                item=catalog_item,
+                key="Certification",
+                value="Fairtrade"
             )
             assert spec.item.name == catalog_item.name
             assert spec.key == "Certification"
@@ -280,23 +258,18 @@ class TestCatalogItemSpecificationModel(TestCase):
 # 6. POSTS, BLOG & NEWS TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestBlogCategoryModel(TestCase):
+class TestBlogCategoryModel(TenantAwareTestCase):
     def test_blog_category_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             blog_category = BlogCategoryFactory(name="News", slug="news")
             assert blog_category.name == "News"
             assert blog_category.slug == "news"
             assert str(blog_category) == "News"
 
 
-@pytest.mark.django_db
-class TestPostModel(TestCase):
+class TestPostModel(TenantAwareTestCase):
     def test_post_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             blog_category = BlogCategoryFactory()
             post = PostFactory(
                 blog_category=blog_category,
@@ -314,15 +287,14 @@ class TestPostModel(TestCase):
             assert str(post) == "Test Post"
 
     def test_post_optimized_query(self):
-        client = ClientFactory()
-        with tenant_context(client):
-            post = PostFactory()
+        with tenant_context(self.tenant):
+            blog_category = BlogCategoryFactory()
+            post = PostFactory(blog_category=blog_category)
             queried = Post.objects.optimized().get(id=post.id)
             assert queried.blog_category.name == post.blog_category.name
 
     def test_post_multilingual_fields(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             blog_category = BlogCategoryFactory()
             post = PostFactory(
                 blog_category=blog_category,
@@ -340,33 +312,27 @@ class TestPostModel(TestCase):
             assert "fr/" in post.text_file_fr.name
 
 
-@pytest.mark.django_db
-class TestPostDocumentModel(TestCase):
+class TestPostDocumentModel(TenantAwareTestCase):
     def test_post_document_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             post = PostFactory()
             doc = PostDocumentFactory(post=post)
             assert doc.post.title == post.title
             assert doc.document is not None
 
 
-@pytest.mark.django_db
-class TestPostFileModel(TestCase):
+class TestPostFileModel(TenantAwareTestCase):
     def test_post_file_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             post = PostFactory()
             file = PostFileFactory(post=post)
             assert file.post.title == post.title
             assert file.file is not None
 
 
-@pytest.mark.django_db
-class TestPostImageModel(TestCase):
+class TestPostImageModel(TenantAwareTestCase):
     def test_post_image_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             post = PostFactory()
             post_image = PostImageFactory(post=post)
             assert post_image.post.title == post.title
@@ -377,12 +343,9 @@ class TestPostImageModel(TestCase):
 # 7. MULTIMEDIA & COMMUNICATIONS TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestVideoModel(TestCase):
+class TestVideoModel(TenantAwareTestCase):
     def test_video_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             video = VideoFactory(
                 title="CECAB Band Performance",
                 link="https://youtube.com/watch?v=123",
@@ -396,11 +359,9 @@ class TestVideoModel(TestCase):
             assert str(video) == "CECAB Band Performance"
 
 
-@pytest.mark.django_db
-class TestPostVideoModel(TestCase):
+class TestPostVideoModel(TenantAwareTestCase):
     def test_post_video_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             post = PostFactory()
             video = VideoFactory()
             post_video = PostVideoFactory(post=post, video=video)
@@ -408,11 +369,9 @@ class TestPostVideoModel(TestCase):
             assert post_video.video.title == video.title
 
 
-@pytest.mark.django_db
-class TestMessageModel(TestCase):
+class TestMessageModel(TenantAwareTestCase):
     def test_message_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             message = MessageFactory(
                 name="John Doe",
                 email="john@example.com",
@@ -431,12 +390,9 @@ class TestMessageModel(TestCase):
 # PARTNER MODULE TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestPartnerModel(TestCase):
+class TestPartnerModel(TenantAwareTestCase):
     def test_partner_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             partner = PartnerFactory(title="Fairtrade International")
             assert partner.title == "Fairtrade International"
             assert str(partner) == "Fairtrade International"
@@ -446,22 +402,17 @@ class TestPartnerModel(TestCase):
 # 8. CORPORATE GOVERNANCE & TEAM TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestRoleModel(TestCase):
+class TestRoleModel(TenantAwareTestCase):
     def test_role_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             role = RoleFactory(title="President")
             assert role.title == "President"
             assert str(role) == "President"
 
 
-@pytest.mark.django_db
-class TestTeamModel(TestCase):
+class TestTeamModel(TenantAwareTestCase):
     def test_team_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             role = RoleFactory(title="President")
             team = TeamFactory(name="John Doe", role=role, from_assembly=True)
             assert team.name == "John Doe"
@@ -470,8 +421,7 @@ class TestTeamModel(TestCase):
             assert str(team) == "John Doe - President"
 
     def test_team_unique_together(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             role = RoleFactory()
             TeamFactory(name="John Doe", role=role, from_assembly=True)
             with pytest.raises(IntegrityError):
@@ -482,12 +432,9 @@ class TestTeamModel(TestCase):
 # 9. GENERAL DOCUMENTATION TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestBudgetModel(TestCase):
+class TestBudgetModel(TenantAwareTestCase):
     def test_budget_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             budget = BudgetFactory(
                 title="Annual Budget 2024",
                 slug="annual-budget-2024",
@@ -500,35 +447,31 @@ class TestBudgetModel(TestCase):
             assert str(budget) == "Annual Budget 2024"
 
 
-@pytest.mark.django_db
-class TestExtraDocModel(TestCase):
+class TestExtraDocModel(TenantAwareTestCase):
     def test_extra_doc_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             extra_doc = ExtraDocFactory(
-                title="Quality Certificate", slug="quality-cert", active=True
+                title="Quality Certificate",
+                slug="quality-cert",
+                active=True
             )
             assert extra_doc.title == "Quality Certificate"
             assert extra_doc.active is True
             assert str(extra_doc) == "Quality Certificate"
 
 
-@pytest.mark.django_db
-class TestExtraImageModel(TestCase):
+class TestExtraImageModel(TenantAwareTestCase):
     def test_extra_image_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             extra_doc = ExtraDocFactory()
             extra_image = ExtraImageFactory(extra_doc=extra_doc)
             assert extra_image.extra_doc.title == extra_doc.title
             assert extra_image.picture is not None
 
 
-@pytest.mark.django_db
-class TestInformationModel(TestCase):
+class TestInformationModel(TenantAwareTestCase):
     def test_information_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             post = PostFactory()
             info = InformationFactory(
                 service=post,
@@ -545,15 +488,12 @@ class TestInformationModel(TestCase):
 # REVIEW MODEL TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestReviewModel(TestCase):
+class TestReviewModel(TenantAwareTestCase):
     def test_review_creation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory()
             user = UserFactory(
-                username="reviewer", password="testpass123", tenant=client
+                username="reviewer", password="testpass123", tenant=self.tenant
             )
             review = ReviewFactory(
                 item=catalog_item,
@@ -570,11 +510,10 @@ class TestReviewModel(TestCase):
             assert str(review) == f"Review by reviewer on {catalog_item.name} (4/5)"
 
     def test_review_unique_together(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory()
             user = UserFactory(
-                username="reviewer", password="testpass123", tenant=client
+                username="reviewer", password="testpass123", tenant=self.tenant
             )
             ReviewFactorySingle(
                 item=catalog_item, client=user, rating=5, comment="First review"
@@ -585,17 +524,15 @@ class TestReviewModel(TestCase):
                 )
 
     def test_review_updates_item_rating(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory(average_rating=0, total_reviews=0)
             user1 = UserFactory(
-                username="reviewer1", password="testpass123", tenant=client
+                username="reviewer1", password="testpass123", tenant=self.tenant
             )
             user2 = UserFactory(
-                username="reviewer2", password="testpass123", tenant=client
+                username="reviewer2", password="testpass123", tenant=self.tenant
             )
 
-            # Create first review
             ReviewFactory(
                 item=catalog_item,
                 client=user1,
@@ -607,7 +544,6 @@ class TestReviewModel(TestCase):
             assert catalog_item.average_rating == Decimal("4.00")
             assert catalog_item.total_reviews == 1
 
-            # Create second review
             ReviewFactory(
                 item=catalog_item,
                 client=user2,
@@ -620,11 +556,10 @@ class TestReviewModel(TestCase):
             assert catalog_item.total_reviews == 2
 
     def test_review_only_counts_approved_reviews(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory()
             user = UserFactory(
-                username="reviewer", password="testpass123", tenant=client
+                username="reviewer", password="testpass123", tenant=self.tenant
             )
             ReviewFactory(
                 item=catalog_item,
@@ -638,11 +573,10 @@ class TestReviewModel(TestCase):
             assert catalog_item.average_rating == Decimal("0.00")
 
     def test_review_delete_updates_item(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory()
             user = UserFactory(
-                username="reviewer", password="testpass123", tenant=client
+                username="reviewer", password="testpass123", tenant=self.tenant
             )
             review = ReviewFactory(
                 item=catalog_item,
@@ -660,103 +594,94 @@ class TestReviewModel(TestCase):
             assert catalog_item.average_rating == Decimal("0.00")
 
 
-@pytest.mark.django_db
-class TestReviewModelCounting:
-    @pytest.mark.parametrize(
-        "ratings,expected_avg,expected_count",
-        [
-            ([5, 4, 3], 4.0, 3),
-            ([5, 5], 5.0, 2),
-            ([1], 1.0, 1),
-        ],
-    )
-    def test_review_multiple_ratings(self, ratings, expected_avg, expected_count):
-        client = ClientFactory()
-        with tenant_context(client):
-            catalog_item = CatalogItemFactory()
+class TestReviewModelCounting(TenantAwareTestCase):
+    
+    def test_review_multiple_ratings(self):
+        # Define your test cases inside a dictionary or list of tuples
+        test_cases = [
+            {"ratings":[5, 4, 3], "expected_avg": 4.0, "expected_count": 3},
+            {"ratings":[5, 5], "expected_avg": 5.0, "expected_count": 2},
+            {"ratings":[1], "expected_avg": 1.0, "expected_count": 1},
+        ]
 
-            for i, rating in enumerate(ratings):
-                user = UserFactory(
-                    username=f"reviewer_{i}", password="testpass123", tenant=client
-                )
-                ReviewFactory(
-                    item=catalog_item,
-                    client=user,
-                    rating=rating,
-                    comment=f"Review {i}",
-                    is_approved=True,
-                )
+        
+        with tenant_context(self.tenant):
+            for count, case in enumerate(test_cases, start=1):
+                catalog_item = CatalogItemFactory()
 
-            catalog_item.refresh_from_db()
-            assert catalog_item.average_rating == Decimal(str(expected_avg))
-            assert catalog_item.total_reviews == expected_count
+                for i, rating in enumerate(case["ratings"]):
+                    user = UserFactory(
+                        username=f"reviewer_{i}_{count}_{rating}",  
+                        email=f"reviewer@hot_{i}_{count}_{rating}.com",  
+                        password="testpass123",
+                        tenant=self.tenant
+                    )
+                    ReviewFactory(
+                        item=catalog_item,
+                        client=user,
+                        rating=rating,
+                        comment=f"Review {i}",
+                        is_approved=True,
+                    )
+
+                catalog_item.refresh_from_db()
+
+                from decimal import Decimal
+                assert catalog_item.average_rating == Decimal(str(case["expected_avg"]))
+                assert catalog_item.total_reviews == case["expected_count"]
+
 
 
 # ==========================================
 # RELATIONSHIP AND INTEGRATION TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestRelationships(TestCase):
+class TestRelationships(TenantAwareTestCase):
     def test_page_content_block_relationship(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             page = PageFactory()
-            block1 = PageContentBlockFactory(
-                page=page, block_type="text", title="Block 1", order=1
-            )
-            block2 = PageContentBlockFactory(
-                page=page, block_type="hero", title="Block 2", order=2
-            )
-
+            PageContentBlockFactory(page=page, block_type="text", title="Block 1", order=1)
+            PageContentBlockFactory(page=page, block_type="hero", title="Block 2", order=2)
+            
             blocks = page.blocks.all()
             assert blocks.count() == 2
             assert blocks[0].title == "Block 1"
             assert blocks[1].title == "Block 2"
 
     def test_catalog_item_specification_relationship(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory()
-            spec1 = CatalogItemSpecificationFactory(
-                item=catalog_item, key="Certification", value="Fairtrade"
-            )
-            spec2 = CatalogItemSpecificationFactory(
-                item=catalog_item, key="Origin", value="Ghana"
-            )
-
+            CatalogItemSpecificationFactory(item=catalog_item, key="Certification", value="Fairtrade")
+            CatalogItemSpecificationFactory(item=catalog_item, key="Origin", value="Ghana")
+            
             specs = catalog_item.specifications.all()
             assert specs.count() == 2
 
     def test_association_image_relationship(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             association = AssociationFactory()
-            img1 = AssociationImageFactory(association=association)
-            img2 = AssociationImageFactory(association=association)
-
+            AssociationImageFactory(association=association)
+            AssociationImageFactory(association=association)
+            
             images = association.cms_images.all()
             assert images.count() == 2
 
     def test_post_video_relationship(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             post = PostFactory()
             video = VideoFactory()
-            post_video1 = PostVideoFactory(post=post, video=video)
-            post_video2 = PostVideoFactory(post=post, video=VideoFactory())
-
+            PostVideoFactory(post=post, video=video)
+            PostVideoFactory(post=post, video=VideoFactory())
+            
             assert post.post_videos.count() == 2
             assert video.post_videos.count() == 1
 
     def test_information_post_relationship(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             post = PostFactory()
-            info1 = InformationFactory(service=post, question="Q1", information="A1")
-            info2 = InformationFactory(service=post, question="Q2", information="A2")
-
+            InformationFactory(service=post, question="Q1", information="A1")
+            InformationFactory(service=post, question="Q2", information="A2")
+            
             assert post.informations.count() == 2
 
 
@@ -764,29 +689,24 @@ class TestRelationships(TestCase):
 # CUSTOM QUERYSET TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestCustomQuerySets(TestCase):
+class TestCustomQuerySets(TenantAwareTestCase):
     def test_customer_optimized_queryset(self):
-        client = ClientFactory()
-        with tenant_context(client):
-            customer = CustomerFactory(user__username="testuser", user__tenant=client)
+        with tenant_context(self.tenant):
+            CustomerFactory(user__username="testuser", user__tenant=self.tenant)
             queryset = Customer.objects.optimized()
             assert queryset is not None
             assert queryset.count() > 0
 
     def test_association_optimized_queryset(self):
-        client = ClientFactory()
-        with tenant_context(client):
-            association = AssociationFactory()
+        with tenant_context(self.tenant):
+            AssociationFactory()
             queryset = Association.objects.optimized()
             assert queryset is not None
             assert queryset.count() > 0
 
     def test_post_optimized_queryset(self):
-        client = ClientFactory()
-        with tenant_context(client):
-            post = PostFactory()
+        with tenant_context(self.tenant):
+            PostFactory()
             queryset = Post.objects.optimized()
             assert queryset is not None
             assert queryset.count() > 0
@@ -796,26 +716,21 @@ class TestCustomQuerySets(TestCase):
 # MODEL FIELD AND CONSTRAINT TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestModelConstraints(TestCase):
+class TestModelConstraints(TenantAwareTestCase):
     def test_slug_uniqueness_page(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             PageFactorySingle(title="Test", slug="test-slug")
             with pytest.raises(Exception):
                 PageFactorySingle(title="Test Duplicate", slug="test-slug")
 
     def test_slug_uniqueness_category(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             CategoryFactorySingle(name="Test", slug="test-slug")
             with pytest.raises(Exception):
                 CategoryFactorySingle(name="Test Duplicate", slug="test-slug")
 
     def test_slug_uniqueness_blog_category(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             BlogCategoryFactorySingle(name="Test", slug="test-slug")
             with pytest.raises(Exception):
                 BlogCategoryFactorySingle(name="Test Duplicate", slug="test-slug")
@@ -825,12 +740,9 @@ class TestModelConstraints(TestCase):
 # FILE UPLOAD FIELD TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestFileUploads(TestCase):
+class TestFileUploads(TenantAwareTestCase):
     def test_image_file_upload(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             category = CategoryFactory()
             item = CatalogItemFactory(
                 category=category,
@@ -842,18 +754,18 @@ class TestFileUploads(TestCase):
             assert item.picture.name.startswith("orgs_api/cms/catalog/")
 
     def test_document_file_upload(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             blog_category = BlogCategoryFactory()
             post = PostFactory(
-                blog_category=blog_category, title="Test Post", slug="test-post"
+                blog_category=blog_category,
+                title="Test Post",
+                slug="test-post"
             )
             assert post.text_file is not None
             assert post.text_file.name.startswith("orgs_api/cms/posts/documents/")
 
     def test_multilingual_file_uploads(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             blog_category = BlogCategoryFactory()
             post = PostFactory(
                 blog_category=blog_category,
@@ -875,20 +787,16 @@ class TestFileUploads(TestCase):
 # EDGE CASES AND BOUNDARY TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestEdgeCases(TestCase):
+class TestEdgeCases(TenantAwareTestCase):
     def test_year_goal_decimal_precision(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             goal = YearGoalFactory(
                 year=2025, label="Production", value=Decimal("1234.57")
             )
             assert goal.value == Decimal("1234.57")
 
     def test_catalog_item_null_price(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             category = CategoryFactory()
             item = CatalogItemFactory(
                 category=category,
@@ -900,8 +808,7 @@ class TestEdgeCases(TestCase):
             assert item.price is None
 
     def test_post_blank_description(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             blog_category = BlogCategoryFactory()
             post = PostFactory(
                 blog_category=blog_category,
@@ -912,23 +819,20 @@ class TestEdgeCases(TestCase):
             assert post.description == ""
 
     def test_review_min_max_rating(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory()
             user1 = UserFactory(
-                username="reviewer1", password="testpass123", tenant=client
+                username="reviewer1", password="testpass123", tenant=self.tenant
             )
             user2 = UserFactory(
-                username="reviewer2", password="testpass123", tenant=client
+                username="reviewer2", password="testpass123", tenant=self.tenant
             )
 
-            # Test minimum rating (1)
             review1 = ReviewFactory(
                 item=catalog_item, client=user1, rating=1, comment="Minimum rating"
             )
             assert review1.rating == 1
 
-            # Test maximum rating (5)
             review2 = ReviewFactory(
                 item=catalog_item, client=user2, rating=5, comment="Maximum rating"
             )
@@ -939,17 +843,14 @@ class TestEdgeCases(TestCase):
 # PERFORMANCE AND OPTIMIZATION TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestPerformance(TestCase):
+class TestPerformance(TenantAwareTestCase):
     def test_bulk_create_reviews(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory()
             users = []
             for i in range(10):
                 user = UserFactory(
-                    username=f"bulk_user_{i}", password="testpass123", tenant=client
+                    username=f"bulk_user_{i}", password="testpass123", tenant=self.tenant
                 )
                 users.append(user)
 
@@ -979,32 +880,27 @@ class TestPerformance(TestCase):
 # MODEL META CLASS TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestModelMeta(TestCase):
+class TestModelMeta(TenantAwareTestCase):
     def test_page_meta_ordering(self):
-        client = ClientFactory()
-        with tenant_context(client):
-            page1 = PageFactory(title="Home", slug="home", order=3)
-            page2 = PageFactory(title="About", slug="about", order=1)
-            page3 = PageFactory(title="Contact", slug="contact", order=2)
-
+        with tenant_context(self.tenant):
+            PageFactory(title="Home", slug="home", order=3)
+            PageFactory(title="About", slug="about", order=1)
+            PageFactory(title="Contact", slug="contact", order=2)
+            
             pages = Page.objects.all()
             assert pages[0].title == "About"
             assert pages[1].title == "Contact"
             assert pages[2].title == "Home"
 
     def test_review_meta_ordering(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory()
             user1 = UserFactory(
-                username="reviewer1", password="testpass123", tenant=client
+                username="reviewer1", password="testpass123", tenant=self.tenant
             )
             user2 = UserFactory(
-                username="reviewer2", password="testpass123", tenant=client
+                username="reviewer2", password="testpass123", tenant=self.tenant
             )
-
             review1 = ReviewFactory(
                 item=catalog_item,
                 client=user1,
@@ -1019,7 +915,7 @@ class TestModelMeta(TestCase):
                 comment="Newer review",
                 is_approved=True,
             )
-
+            
             reviews = Review.objects.all()
             assert reviews[0].id == review2.id
             assert reviews[1].id == review1.id
@@ -1032,14 +928,11 @@ class TestModelMeta(TestCase):
 # TEST COVERAGE FOR ALL STRING REPRESENTATIONS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestStringRepresentations(TestCase):
+class TestStringRepresentations(TenantAwareTestCase):
     def test_all_model_str_methods(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             # Create all objects using factories
-            customer = CustomerFactory(user__username="testuser", user__tenant=client)
+            customer = CustomerFactory(user__username="testuser", user__tenant=self.tenant)
             page = PageFactory()
             district = DistrictFactory()
             association = AssociationFactory(district=district)
@@ -1054,7 +947,7 @@ class TestStringRepresentations(TestCase):
             budget = BudgetFactory()
             info = InformationFactory(service=post)
             review_user = UserFactory(
-                username="reviewer", password="testpass123", tenant=client
+                username="reviewer", password="testpass123", tenant=self.tenant
             )
             review = ReviewFactory(
                 item=catalog_item, client=review_user, rating=4, comment="Great!"

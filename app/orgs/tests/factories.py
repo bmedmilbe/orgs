@@ -4,13 +4,13 @@ from io import BytesIO
 
 import factory
 import factory.fuzzy
+from core.models import Client
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.text import slugify
 from factory.django import DjangoModelFactory
 from PIL import Image
 
-from core.models import Client
 from orgs.models import (
     Association,
     AssociationImage,
@@ -84,6 +84,7 @@ def generate_doc(title="text.docx"):
 class ClientFactory(DjangoModelFactory):
     class Meta:
         model = Client
+        django_get_or_create = ["schema_name"]  
 
     schema_name = factory.Sequence(lambda n: f"tenant_{n}")
     name = factory.Sequence(lambda n: f"Tenant Corp {n}")

@@ -2,9 +2,9 @@
 
 from decimal import Decimal
 
-import pytest
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+
+# ❌ REMOVE: from django.test import TestCase
 from django_tenants.utils import tenant_context
 from rest_framework import status
 from rest_framework.test import APIRequestFactory, force_authenticate
@@ -14,6 +14,9 @@ from orgs.models import (
     Message,
     Review,
 )
+
+# ✅ ADD: Import your base class
+from orgs.tests.base import TenantAwareTestCase
 from orgs.tests.factories import (
     AssociationFactory,
     AssociationImageFactory,
@@ -22,7 +25,6 @@ from orgs.tests.factories import (
     CatalogItemFactory,
     CatalogItemSpecificationFactory,
     CategoryFactory,
-    ClientFactory,
     CustomerFactory,
     DistrictFactory,
     ExtraDocFactory,
@@ -81,16 +83,12 @@ def get_authenticated_request(method, path, user, data=None, format="json"):
 # 1. CORE & USER MODULE VIEW TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestCustomerViewSet(TestCase):
+class TestCustomerViewSet(TenantAwareTestCase):  # ✅ Use TenantAwareTestCase
     def test_list_customers(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
-            customer1 = CustomerFactory(user__tenant=tenant)
-            customer2 = CustomerFactory(user__tenant=tenant)
+        with tenant_context(self.tenant):  # ✅ Use self.tenant
+            user = UserFactory(tenant=self.tenant)
+            customer1 = CustomerFactory(user__tenant=self.tenant)
+            customer2 = CustomerFactory(user__tenant=self.tenant)
 
             view = CustomerViewSet.as_view({"get": "list"})
             request = get_authenticated_request("get", "/api/customers/", user)
@@ -100,11 +98,9 @@ class TestCustomerViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_retrieve_customer(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
-            customer = CustomerFactory(user__tenant=tenant)
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
+            customer = CustomerFactory(user__tenant=self.tenant)
 
             view = CustomerViewSet.as_view({"get": "retrieve"})
             request = get_authenticated_request(
@@ -117,10 +113,9 @@ class TestCustomerViewSet(TestCase):
             assert response.data["first_name"] == customer.user.first_name
 
     def test_retrieve_nonexistent_customer(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
 
-        with tenant_context(tenant):
             view = CustomerViewSet.as_view({"get": "retrieve"})
             request = get_authenticated_request("get", "/api/customers/999/", user)
             response = view(request, pk=999)
@@ -132,14 +127,10 @@ class TestCustomerViewSet(TestCase):
 # 2. DYNAMIC CONTENT & PAGE BUILDER VIEW TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestPageViewSet(TestCase):
+class TestPageViewSet(TenantAwareTestCase):
     def test_list_pages(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             page1 = PageFactory(active=True)
             page2 = PageFactory(active=True)
             page3 = PageFactory(active=False)
@@ -152,10 +143,8 @@ class TestPageViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_retrieve_page_by_slug(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             page = PageFactory(title="Home", slug="home", active=True)
             block = PageContentBlockFactory(page=page, block_type="text")
 
@@ -169,10 +158,8 @@ class TestPageViewSet(TestCase):
             assert "blocks" in response.data
 
     def test_retrieve_inactive_page(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             page = PageFactory(active=False)
 
             view = PageViewSet.as_view({"get": "retrieve"})
@@ -182,10 +169,9 @@ class TestPageViewSet(TestCase):
             assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_retrieve_nonexistent_page(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
 
-        with tenant_context(tenant):
             view = PageViewSet.as_view({"get": "retrieve"})
             request = get_authenticated_request("get", "/api/pages/nonexistent/", user)
             response = view(request, slug="nonexistent")
@@ -197,14 +183,10 @@ class TestPageViewSet(TestCase):
 # 3. METRICS & GOALS VIEW TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestYearGoalViewSet(TestCase):
+class TestYearGoalViewSet(TenantAwareTestCase):
     def test_list_year_goals(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             goal1 = YearGoalFactory(year=2024)
             goal2 = YearGoalFactory(year=2025)
 
@@ -216,10 +198,8 @@ class TestYearGoalViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_filter_by_year(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             YearGoalFactory(year=2024)
             YearGoalFactory(year=2024)
             YearGoalFactory(year=2025)
@@ -233,10 +213,8 @@ class TestYearGoalViewSet(TestCase):
             assert all(item["year"] == 2024 for item in response.data)
 
     def test_filter_by_dashboard(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             YearGoalFactory(show_in_dashboard=True)
             YearGoalFactory(show_in_dashboard=True)
             YearGoalFactory(show_in_dashboard=False)
@@ -251,10 +229,8 @@ class TestYearGoalViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_retrieve_year_goal(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             goal = YearGoalFactory(year=2025, label="Production")
 
             view = YearGoalViewSet.as_view({"get": "retrieve"})
@@ -270,14 +246,10 @@ class TestYearGoalViewSet(TestCase):
 # 4. ASSOCIATIONS & NETWORK VIEW TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestDistrictViewSet(TestCase):
+class TestDistrictViewSet(TenantAwareTestCase):
     def test_list_districts(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             district1 = DistrictFactory(name="North")
             district2 = DistrictFactory(name="South")
 
@@ -289,10 +261,8 @@ class TestDistrictViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_retrieve_district(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             district = DistrictFactory(name="North")
 
             view = DistrictViewSet.as_view({"get": "retrieve"})
@@ -305,13 +275,10 @@ class TestDistrictViewSet(TestCase):
             assert response.data["name"] == "North"
 
 
-@pytest.mark.django_db
-class TestAssociationViewSet(TestCase):
+class TestAssociationViewSet(TenantAwareTestCase):
     def test_list_associations(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             association1 = AssociationFactory()
             association2 = AssociationFactory()
 
@@ -323,10 +290,8 @@ class TestAssociationViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_filter_by_district(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             district1 = DistrictFactory()
             district2 = DistrictFactory()
             AssociationFactory(district=district1)
@@ -343,10 +308,8 @@ class TestAssociationViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_filter_by_district_name(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             district = DistrictFactory(name="North")
             AssociationFactory(district=district)
 
@@ -360,10 +323,8 @@ class TestAssociationViewSet(TestCase):
             assert len(response.data) == 1
 
     def test_retrieve_association(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             association = AssociationFactory(name="CECAB North")
             AssociationImageFactory(association=association)
 
@@ -382,14 +343,10 @@ class TestAssociationViewSet(TestCase):
 # 5. CATALOGUE & ECO-TOURISM VIEW TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestCategoryViewSet(TestCase):
+class TestCategoryViewSet(TenantAwareTestCase):
     def test_list_categories(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             category1 = CategoryFactory()
             category2 = CategoryFactory()
 
@@ -401,10 +358,8 @@ class TestCategoryViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_retrieve_category_by_slug(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             category = CategoryFactory(name="Chocolates", slug="chocolates")
             item1 = CatalogItemFactory(category=category, name="Dark Chocolate")
             item2 = CatalogItemFactory(category=category, name="Milk Chocolate")
@@ -420,13 +375,10 @@ class TestCategoryViewSet(TestCase):
             assert len(response.data["items"]) == 2
 
 
-@pytest.mark.django_db
-class TestCatalogItemViewSet(TestCase):
+class TestCatalogItemViewSet(TenantAwareTestCase):
     def test_list_catalog_items(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             item1 = CatalogItemFactory(is_available=True)
             item2 = CatalogItemFactory(is_available=True)
             item3 = CatalogItemFactory(is_available=False)
@@ -439,10 +391,8 @@ class TestCatalogItemViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_filter_by_category(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             category1 = CategoryFactory()
             category2 = CategoryFactory()
             CatalogItemFactory(category=category1)
@@ -459,10 +409,8 @@ class TestCatalogItemViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_filter_by_category_slug(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             category = CategoryFactory(slug="chocolates")
             CatalogItemFactory(category=category)
             CatalogItemFactory(category=category)
@@ -477,10 +425,8 @@ class TestCatalogItemViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_retrieve_catalog_item_by_slug(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             category = CategoryFactory()
             item = CatalogItemFactory(
                 category=category,
@@ -506,14 +452,10 @@ class TestCatalogItemViewSet(TestCase):
 # 6. POSTS, BLOG & NEWS VIEW TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestBlogCategoryViewSet(TestCase):
+class TestBlogCategoryViewSet(TenantAwareTestCase):
     def test_list_blog_categories(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             category1 = BlogCategoryFactory()
             category2 = BlogCategoryFactory()
 
@@ -525,10 +467,8 @@ class TestBlogCategoryViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_retrieve_blog_category_by_slug(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             category = BlogCategoryFactory(name="News", slug="news")
 
             view = BlogCategoryViewSet.as_view({"get": "retrieve"})
@@ -541,13 +481,10 @@ class TestBlogCategoryViewSet(TestCase):
             assert response.data["name"] == "News"
 
 
-@pytest.mark.django_db
-class TestPostViewSet(TestCase):
+class TestPostViewSet(TenantAwareTestCase):
     def test_list_posts(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             category = BlogCategoryFactory()
             post1 = PostFactory(blog_category=category, active=True)
             post2 = PostFactory(blog_category=category, active=True)
@@ -563,10 +500,8 @@ class TestPostViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_list_posts_uses_list_serializer(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             category = BlogCategoryFactory()
             post = PostFactory(blog_category=category, active=True)
 
@@ -582,10 +517,8 @@ class TestPostViewSet(TestCase):
             assert "text" not in response.data[0]
 
     def test_filter_posts_by_featured(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             category = BlogCategoryFactory()
             PostFactory(blog_category=category, active=True, featured=True)
             PostFactory(blog_category=category, active=True, featured=False)
@@ -601,10 +534,8 @@ class TestPostViewSet(TestCase):
             assert response.data[0]["featured"] is True
 
     def test_filter_posts_by_service(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             category = BlogCategoryFactory()
             PostFactory(blog_category=category, active=True, is_a_service=True)
             PostFactory(blog_category=category, active=True, is_a_service=False)
@@ -620,10 +551,8 @@ class TestPostViewSet(TestCase):
             assert response.data[0]["is_a_service"] is True
 
     def test_retrieve_post(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             category = BlogCategoryFactory()
             post = PostFactory(
                 blog_category=category,
@@ -652,10 +581,8 @@ class TestPostViewSet(TestCase):
             assert "faq_entries" in response.data
 
     def test_retrieve_post_returns_404_if_inactive(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             category = BlogCategoryFactory()
             post = PostFactory(blog_category=category, active=False)
 
@@ -670,10 +597,8 @@ class TestPostViewSet(TestCase):
             assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_retrieve_post_with_wrong_category(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             category1 = BlogCategoryFactory()
             category2 = BlogCategoryFactory()
             post = PostFactory(blog_category=category1, active=True)
@@ -693,14 +618,10 @@ class TestPostViewSet(TestCase):
 # 7. MULTIMEDIA & COMMUNICATIONS VIEW TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestVideoViewSet(TestCase):
+class TestVideoViewSet(TenantAwareTestCase):
     def test_list_videos(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             video1 = VideoFactory()
             video2 = VideoFactory()
 
@@ -712,10 +633,8 @@ class TestVideoViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_filter_by_is_band(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             VideoFactory(is_band=True)
             VideoFactory(is_band=True)
             VideoFactory(is_band=False)
@@ -730,10 +649,8 @@ class TestVideoViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_filter_by_is_spot(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             VideoFactory(is_spot=True)
             VideoFactory(is_spot=True)
             VideoFactory(is_spot=False)
@@ -748,10 +665,8 @@ class TestVideoViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_retrieve_video(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             video = VideoFactory(title="Band Performance")
 
             view = VideoViewSet.as_view({"get": "retrieve"})
@@ -762,13 +677,10 @@ class TestVideoViewSet(TestCase):
             assert response.data["title"] == "Band Performance"
 
 
-@pytest.mark.django_db
-class TestMessageViewSet(TestCase):
+class TestMessageViewSet(TenantAwareTestCase):
     def test_create_message(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             data = {
                 "name": "John Doe",
                 "email": "john@example.com",
@@ -789,10 +701,8 @@ class TestMessageViewSet(TestCase):
             assert message.sent is False
 
     def test_create_message_with_invalid_email(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             data = {
                 "name": "John Doe",
                 "email": "invalid_email",
@@ -810,10 +720,8 @@ class TestMessageViewSet(TestCase):
             assert "email" in response.data
 
     def test_create_message_with_missing_fields(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             data = {"name": "John Doe", "email": "john@example.com"}
 
             view = MessageViewSet.as_view({"post": "create"})
@@ -825,13 +733,10 @@ class TestMessageViewSet(TestCase):
             assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-@pytest.mark.django_db
-class TestPartnerViewSet(TestCase):
+class TestPartnerViewSet(TenantAwareTestCase):
     def test_list_partners(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             partner1 = PartnerFactory()
             partner2 = PartnerFactory()
 
@@ -843,10 +748,8 @@ class TestPartnerViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_retrieve_partner(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             partner = PartnerFactory(title="Fairtrade International")
 
             view = PartnerViewSet.as_view({"get": "retrieve"})
@@ -863,14 +766,10 @@ class TestPartnerViewSet(TestCase):
 # 8. CORPORATE GOVERNANCE & TEAM VIEW TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestRoleViewSet(TestCase):
+class TestRoleViewSet(TenantAwareTestCase):
     def test_list_roles(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             role1 = RoleFactory(title="President")
             role2 = RoleFactory(title="Vice President")
 
@@ -882,10 +781,8 @@ class TestRoleViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_retrieve_role(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             role = RoleFactory(title="President")
 
             view = RoleViewSet.as_view({"get": "retrieve"})
@@ -896,13 +793,10 @@ class TestRoleViewSet(TestCase):
             assert response.data["title"] == "President"
 
 
-@pytest.mark.django_db
-class TestTeamViewSet(TestCase):
+class TestTeamViewSet(TenantAwareTestCase):
     def test_list_team_members(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             member1 = TeamFactory()
             member2 = TeamFactory()
 
@@ -914,10 +808,8 @@ class TestTeamViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_filter_by_role(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             role1 = RoleFactory()
             role2 = RoleFactory()
             TeamFactory(role=role1)
@@ -934,10 +826,8 @@ class TestTeamViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_filter_by_from_assembly(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             TeamFactory(from_assembly=True)
             TeamFactory(from_assembly=True)
             TeamFactory(from_assembly=False)
@@ -952,10 +842,8 @@ class TestTeamViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_retrieve_team_member(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             role = RoleFactory(title="President")
             team = TeamFactory(name="John Doe", role=role)
 
@@ -974,14 +862,10 @@ class TestTeamViewSet(TestCase):
 # 9. GENERAL DOCUMENTATION VIEW TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestBudgetViewSet(TestCase):
+class TestBudgetViewSet(TenantAwareTestCase):
     def test_list_budgets(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             budget1 = BudgetFactory()
             budget2 = BudgetFactory()
 
@@ -993,10 +877,8 @@ class TestBudgetViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_filter_by_year(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             BudgetFactory(year=2024)
             BudgetFactory(year=2024)
             BudgetFactory(year=2025)
@@ -1011,10 +893,8 @@ class TestBudgetViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_filter_by_type(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             BudgetFactory(type=Budget.TYPE_BUDGET)
             BudgetFactory(type=Budget.TYPE_BUDGET)
             BudgetFactory(type=Budget.TYPE_REPORT)
@@ -1029,10 +909,8 @@ class TestBudgetViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_retrieve_budget(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             budget = BudgetFactory(title="Annual Budget 2024")
 
             view = BudgetViewSet.as_view({"get": "retrieve"})
@@ -1045,13 +923,10 @@ class TestBudgetViewSet(TestCase):
             assert response.data["title"] == "Annual Budget 2024"
 
 
-@pytest.mark.django_db
-class TestExtraDocViewSet(TestCase):
+class TestExtraDocViewSet(TenantAwareTestCase):
     def test_list_extra_docs(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             doc1 = ExtraDocFactory(active=True)
             doc2 = ExtraDocFactory(active=True)
             doc3 = ExtraDocFactory(active=False)
@@ -1064,10 +939,8 @@ class TestExtraDocViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_retrieve_extra_doc(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             doc = ExtraDocFactory(title="Quality Certificate", active=True)
             ExtraImageFactory(extra_doc=doc)
 
@@ -1082,10 +955,8 @@ class TestExtraDocViewSet(TestCase):
             assert "gallery_images" in response.data
 
     def test_retrieve_inactive_extra_doc(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             doc = ExtraDocFactory(active=False)
 
             view = ExtraDocViewSet.as_view({"get": "retrieve"})
@@ -1101,21 +972,17 @@ class TestExtraDocViewSet(TestCase):
 # 10. REVIEW VIEW TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestReviewViewSet(TestCase):
+class TestReviewViewSet(TenantAwareTestCase):
     def test_list_reviews(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
-            user1 = UserFactory(username="reviewer1", tenant=tenant)
-            user2 = UserFactory(username="reviewer2", tenant=tenant)
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
+            user1 = UserFactory(username="reviewer1", tenant=self.tenant)
+            user2 = UserFactory(username="reviewer2", tenant=self.tenant)
 
             review1 = ReviewFactory(client=user1, is_approved=True)
             review2 = ReviewFactory(client=user2, is_approved=True)
             review3 = ReviewFactory(
-                client=UserFactory(tenant=tenant), is_approved=False
+                client=UserFactory(tenant=self.tenant), is_approved=False
             )
 
             view = ReviewViewSet.as_view({"get": "list"})
@@ -1126,12 +993,10 @@ class TestReviewViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_filter_by_item(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
-            user1 = UserFactory(username="reviewer1", tenant=tenant)
-            user2 = UserFactory(username="reviewer2", tenant=tenant)
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
+            user1 = UserFactory(username="reviewer1", tenant=self.tenant)
+            user2 = UserFactory(username="reviewer2", tenant=self.tenant)
 
             item1 = CatalogItemFactory()
             item2 = CatalogItemFactory()
@@ -1139,7 +1004,7 @@ class TestReviewViewSet(TestCase):
             ReviewFactory(item=item1, client=user1, is_approved=True)
             ReviewFactory(item=item1, client=user2, is_approved=True)
             ReviewFactory(
-                item=item2, client=UserFactory(tenant=tenant), is_approved=True
+                item=item2, client=UserFactory(tenant=self.tenant), is_approved=True
             )
 
             view = ReviewViewSet.as_view({"get": "list"})
@@ -1152,13 +1017,11 @@ class TestReviewViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_filter_by_rating(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
-            user1 = UserFactory(tenant=tenant)
-            user2 = UserFactory(tenant=tenant)
-            user3 = UserFactory(tenant=tenant)
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
+            user1 = UserFactory(tenant=self.tenant)
+            user2 = UserFactory(tenant=self.tenant)
+            user3 = UserFactory(tenant=self.tenant)
 
             item = CatalogItemFactory()
 
@@ -1174,11 +1037,9 @@ class TestReviewViewSet(TestCase):
             assert len(response.data) == 2
 
     def test_retrieve_review(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
-            review_user = UserFactory(tenant=tenant)
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
+            review_user = UserFactory(tenant=self.tenant)
             catalog_item = CatalogItemFactory(name="Dark Chocolate")
             review = ReviewFactory(
                 item=catalog_item,
@@ -1199,9 +1060,7 @@ class TestReviewViewSet(TestCase):
             assert response.data["comment"] == "Great product!"
 
     def test_create_review_unauthenticated(self):
-        tenant = ClientFactory()
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory()
             data = {"item": catalog_item.id, "rating": 5, "comment": "Excellent!"}
 
@@ -1213,10 +1072,8 @@ class TestReviewViewSet(TestCase):
             assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_create_review_authenticated(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             catalog_item = CatalogItemFactory()
             data = {"item": catalog_item.id, "rating": 5, "comment": "Excellent!"}
 
@@ -1234,10 +1091,8 @@ class TestReviewViewSet(TestCase):
             assert review.comment == "Excellent!"
 
     def test_create_review_with_invalid_rating(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             catalog_item = CatalogItemFactory()
             data = {
                 "item": catalog_item.id,
@@ -1255,10 +1110,8 @@ class TestReviewViewSet(TestCase):
             assert "rating" in response.data
 
     def test_create_duplicate_review(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             catalog_item = CatalogItemFactory()
             ReviewFactory(
                 item=catalog_item, client=user, rating=4, comment="First review"
@@ -1276,10 +1129,8 @@ class TestReviewViewSet(TestCase):
             assert response.status_code == status.HTTP_201_CREATED
 
     def test_delete_review(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             review = ReviewFactory(client=user, is_approved=True)
 
             view = ReviewViewSet.as_view({"delete": "destroy"})
@@ -1292,11 +1143,9 @@ class TestReviewViewSet(TestCase):
             assert Review.objects.count() == 0
 
     def test_delete_review_not_owner(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
-            other_user = UserFactory(username="otheruser", tenant=tenant)
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
+            other_user = UserFactory(username="otheruser", tenant=self.tenant)
             review = ReviewFactory(client=other_user, is_approved=True)
 
             view = ReviewViewSet.as_view({"delete": "destroy"})
@@ -1308,10 +1157,8 @@ class TestReviewViewSet(TestCase):
             assert response.status_code in [status.HTTP_204_NO_CONTENT]
 
     def test_review_updates_item_rating_on_create(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             catalog_item = CatalogItemFactory(average_rating=0, total_reviews=0)
 
             ReviewFactory(item=catalog_item, client=user, rating=4, is_approved=True)
@@ -1321,10 +1168,8 @@ class TestReviewViewSet(TestCase):
             assert catalog_item.total_reviews == 1
 
     def test_review_updates_item_rating_on_delete(self):
-        tenant = ClientFactory()
-        user = UserFactory(tenant=tenant)
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant)
             catalog_item = CatalogItemFactory()
             review = ReviewFactory(
                 item=catalog_item, client=user, rating=4, is_approved=True
@@ -1343,14 +1188,10 @@ class TestReviewViewSet(TestCase):
 # 11. VIEW PERMISSION TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestViewPermissions(TestCase):
+class TestViewPermissions(TenantAwareTestCase):
     def test_readonly_views_allow_unauthenticated(self):
         """Test that readonly views allow unauthenticated access."""
-        tenant = ClientFactory()
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
             readonly_views = [
                 (CustomerViewSet, "customers-list"),
                 (PageViewSet, "pages-list"),
@@ -1382,9 +1223,7 @@ class TestViewPermissions(TestCase):
                 ]
 
     def test_message_create_allows_unauthenticated(self):
-        tenant = ClientFactory()
-
-        with tenant_context(tenant):
+        with tenant_context(self.tenant):
             data = {
                 "name": "John Doe",
                 "email": "john@example.com",

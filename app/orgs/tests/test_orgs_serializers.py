@@ -1,11 +1,10 @@
 # orgs/tests/test_serializers.py
 
-
 from unittest.mock import patch
 
-import pytest
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+
+# ❌ REMOVE: from django.test import TestCase
 from django_tenants.utils import tenant_context
 from rest_framework.test import APIRequestFactory
 
@@ -35,6 +34,9 @@ from orgs.serializers import (
     VideoSerializer,
     YearGoalSerializer,
 )
+
+# ✅ ADD: Import your base class
+from orgs.tests.base import TenantAwareTestCase
 from orgs.tests.factories import (
     AssociationFactory,
     AssociationImageFactory,
@@ -43,7 +45,6 @@ from orgs.tests.factories import (
     CatalogItemFactory,
     CatalogItemSpecificationFactory,
     CategoryFactory,
-    ClientFactory,
     CustomerFactory,
     DistrictFactory,
     ExtraDocFactory,
@@ -74,17 +75,15 @@ User = get_user_model()
 # ==========================================
 
 
-@pytest.mark.django_db
-class TestCustomerSerializer(TestCase):
+class TestCustomerSerializer(TenantAwareTestCase):  
     def test_customer_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant): 
             customer = CustomerFactory(
                 user__username="testuser",
                 user__first_name="John",
                 user__last_name="Doe",
                 user__email="john@example.com",
-                user__tenant=client,
+                user__tenant=self.tenant,
             )
             serializer = CustomerSerializer(customer)
             data = serializer.data
@@ -99,12 +98,9 @@ class TestCustomerSerializer(TestCase):
 # 2. DYNAMIC CONTENT & PAGE BUILDER SERIALIZER TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestPageContentBlockSerializer(TestCase):
+class TestPageContentBlockSerializer(TenantAwareTestCase):
     def test_page_content_block_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             page = PageFactory()
             block = PageContentBlockFactory(
                 page=page,
@@ -123,11 +119,9 @@ class TestPageContentBlockSerializer(TestCase):
             assert data["order"] == 1
 
 
-@pytest.mark.django_db
-class TestPageDetailSerializer(TestCase):
+class TestPageDetailSerializer(TenantAwareTestCase):
     def test_page_detail_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             page = PageFactory(title="Home", slug="home", active=True, order=1)
             block1 = PageContentBlockFactory(page=page, block_type="text", order=1)
             block2 = PageContentBlockFactory(page=page, block_type="hero", order=2)
@@ -146,8 +140,7 @@ class TestPageDetailSerializer(TestCase):
             assert data["blocks"][1]["block_type"] == "hero"
 
     def test_page_detail_serializer_only_active_blocks(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             page = PageFactory(active=True)
             block1 = PageContentBlockFactory(page=page, block_type="text", order=1)
             # Create an inactive page with blocks
@@ -168,12 +161,9 @@ class TestPageDetailSerializer(TestCase):
 # 3. METRICS & GOALS SERIALIZER TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestYearGoalSerializer(TestCase):
+class TestYearGoalSerializer(TenantAwareTestCase):
     def test_year_goal_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             goal = YearGoalFactory(
                 year=2025,
                 label="Chocolate Produced",
@@ -194,12 +184,9 @@ class TestYearGoalSerializer(TestCase):
 # 4. ASSOCIATIONS & NETWORK SERIALIZER TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestDistrictSerializer(TestCase):
+class TestDistrictSerializer(TenantAwareTestCase):
     def test_district_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             district = DistrictFactory(name="North Region")
             serializer = DistrictSerializer(district)
             data = serializer.data
@@ -208,11 +195,9 @@ class TestDistrictSerializer(TestCase):
             assert data["name"] == "North Region"
 
 
-@pytest.mark.django_db
-class TestAssociationSerializer(TestCase):
+class TestAssociationSerializer(TenantAwareTestCase):
     def test_association_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             district = DistrictFactory(name="North Region")
             association = AssociationFactory(
                 name="CECAB North", district=district, number_of_associated=150
@@ -227,8 +212,7 @@ class TestAssociationSerializer(TestCase):
             assert data["number_of_associated"] == 150
 
     def test_association_serializer_with_gallery_images(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             association = AssociationFactory()
             img1 = AssociationImageFactory(association=association)
             img2 = AssociationImageFactory(association=association)
@@ -244,12 +228,9 @@ class TestAssociationSerializer(TestCase):
 # 5. CATALOGUE & ECO-TOURISM SERIALIZER TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestCatalogItemSpecificationSerializer(TestCase):
+class TestCatalogItemSpecificationSerializer(TenantAwareTestCase):
     def test_specification_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             item = CatalogItemFactory()
             spec = CatalogItemSpecificationFactory(
                 item=item, key="Certification", value="Fairtrade"
@@ -262,11 +243,9 @@ class TestCatalogItemSpecificationSerializer(TestCase):
             assert data["value"] == "Fairtrade"
 
 
-@pytest.mark.django_db
-class TestCatalogItemSerializer(TestCase):
+class TestCatalogItemSerializer(TenantAwareTestCase):
     def test_catalog_item_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             category = CategoryFactory(name="Chocolates")
             item = CatalogItemFactory(
                 category=category,
@@ -296,11 +275,9 @@ class TestCatalogItemSerializer(TestCase):
             assert data["specifications"][0]["key"] == "Origin"
 
 
-@pytest.mark.django_db
-class TestCategoryDetailSerializer(TestCase):
+class TestCategoryDetailSerializer(TenantAwareTestCase):
     def test_category_detail_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             category = CategoryFactory(name="Chocolates", slug="chocolates")
             item1 = CatalogItemFactory(category=category, name="Dark Chocolate")
             item2 = CatalogItemFactory(category=category, name="Milk Chocolate")
@@ -321,12 +298,9 @@ class TestCategoryDetailSerializer(TestCase):
 # 6. POSTS, BLOG & NEWS SERIALIZER TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestBlogCategorySerializer(TestCase):
+class TestBlogCategorySerializer(TenantAwareTestCase):
     def test_blog_category_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             category = BlogCategoryFactory(name="News", slug="news")
             serializer = BlogCategorySerializer(category)
             data = serializer.data
@@ -336,11 +310,9 @@ class TestBlogCategorySerializer(TestCase):
             assert data["slug"] == "news"
 
 
-@pytest.mark.django_db
-class TestInformationSerializer(TestCase):
+class TestInformationSerializer(TenantAwareTestCase):
     def test_information_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             post = PostFactory()
             info = InformationFactory(
                 service=post, question="What is this?", information="This is a test"
@@ -353,11 +325,9 @@ class TestInformationSerializer(TestCase):
             assert data["information"] == "This is a test"
 
 
-@pytest.mark.django_db
-class TestPostListSerializer(TestCase):
+class TestPostListSerializer(TenantAwareTestCase):
     def test_post_list_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             blog_category = BlogCategoryFactory(slug="news")
             post = PostFactory(
                 blog_category=blog_category,
@@ -387,11 +357,9 @@ class TestPostListSerializer(TestCase):
             assert "date" in data
 
 
-@pytest.mark.django_db
-class TestPostDetailSerializer(TestCase):
+class TestPostDetailSerializer(TenantAwareTestCase):
     def test_post_detail_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             blog_category = BlogCategoryFactory(name="News", slug="news")
             post = PostFactory(
                 blog_category=blog_category,
@@ -437,8 +405,7 @@ class TestPostDetailSerializer(TestCase):
 
     @patch("orgs.serializers.json.load")
     def test_post_detail_serializer_with_parsed_json(self, mock_json_load):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             fake_file = generate_file_json()
 
             mock_json_load.return_value = {"parsed": "data"}
@@ -450,8 +417,7 @@ class TestPostDetailSerializer(TestCase):
             assert "parsed_json_data" in data
 
     def test_post_detail_serializer_without_processed_file(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             post = PostFactory(processed_text_file=None)
             serializer = PostDetailSerializer(post)
             data = serializer.data
@@ -463,12 +429,9 @@ class TestPostDetailSerializer(TestCase):
 # 7. MULTIMEDIA & COMMUNICATIONS SERIALIZER TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestVideoSerializer(TestCase):
+class TestVideoSerializer(TenantAwareTestCase):
     def test_video_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             video = VideoFactory(
                 title="Band Performance",
                 link="https://youtube.com/watch?v=123",
@@ -486,11 +449,9 @@ class TestVideoSerializer(TestCase):
             assert "created_at" in data
 
 
-@pytest.mark.django_db
-class TestMessageSerializer(TestCase):
+class TestMessageSerializer(TenantAwareTestCase):
     def test_message_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             message = MessageFactory(
                 name="John Doe",
                 email="john@example.com",
@@ -509,8 +470,7 @@ class TestMessageSerializer(TestCase):
             assert "date" in data
 
     def test_message_serializer_read_only_fields(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             data = {
                 "name": "John Doe",
                 "email": "john@example.com",
@@ -524,11 +484,9 @@ class TestMessageSerializer(TestCase):
             assert message.sent is False  # Should default to False
 
 
-@pytest.mark.django_db
-class TestPartnerSerializer(TestCase):
+class TestPartnerSerializer(TenantAwareTestCase):
     def test_partner_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             partner = PartnerFactory(title="Fairtrade International")
             serializer = PartnerSerializer(partner)
             data = serializer.data
@@ -542,12 +500,9 @@ class TestPartnerSerializer(TestCase):
 # 8. CORPORATE GOVERNANCE & TEAM SERIALIZER TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestRoleSerializer(TestCase):
+class TestRoleSerializer(TenantAwareTestCase):
     def test_role_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             role = RoleFactory(title="President")
             serializer = RoleSerializer(role)
             data = serializer.data
@@ -556,11 +511,9 @@ class TestRoleSerializer(TestCase):
             assert data["title"] == "President"
 
 
-@pytest.mark.django_db
-class TestTeamSerializer(TestCase):
+class TestTeamSerializer(TenantAwareTestCase):
     def test_team_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             role = RoleFactory(title="President")
             team = TeamFactory(name="John Doe", role=role, from_assembly=True)
             serializer = TeamSerializer(team)
@@ -577,12 +530,9 @@ class TestTeamSerializer(TestCase):
 # 9. GENERAL DOCUMENTATION SERIALIZER TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestBudgetSerializer(TestCase):
+class TestBudgetSerializer(TenantAwareTestCase):
     def test_budget_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             budget = BudgetFactory(
                 title="Annual Budget 2024",
                 slug="annual-budget-2024",
@@ -601,11 +551,9 @@ class TestBudgetSerializer(TestCase):
             assert "date" in data
 
 
-@pytest.mark.django_db
-class TestExtraDocSerializer(TestCase):
+class TestExtraDocSerializer(TenantAwareTestCase):
     def test_extra_doc_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             extra_doc = ExtraDocFactory(
                 title="Quality Certificate", slug="quality-cert", active=True
             )
@@ -626,12 +574,9 @@ class TestExtraDocSerializer(TestCase):
 # REVIEW SERIALIZER TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestReviewSerializer(TestCase):
+class TestReviewSerializer(TenantAwareTestCase):
     def test_review_serializer(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory(name="Dark Chocolate")
             user = User.objects.create_user(
                 username="reviewer", password="testpass123", first_name="John"
@@ -654,8 +599,7 @@ class TestReviewSerializer(TestCase):
             assert "created_at" in data
 
     def test_review_serializer_validation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory()
             data = {
                 "item": catalog_item.id,
@@ -667,8 +611,7 @@ class TestReviewSerializer(TestCase):
             assert "rating" in serializer.errors
 
     def test_review_serializer_rating_min_validation(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory()
             data = {
                 "item": catalog_item.id,
@@ -680,8 +623,7 @@ class TestReviewSerializer(TestCase):
             assert "rating" in serializer.errors
 
     def test_review_serializer_create_with_client(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             catalog_item = CatalogItemFactory()
             user = User.objects.create_user(username="reviewer", password="testpass123")
 
@@ -703,12 +645,9 @@ class TestReviewSerializer(TestCase):
 # SERIALIZER INTEGRATION TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestSerializerIntegration(TestCase):
+class TestSerializerIntegration(TenantAwareTestCase):
     def test_post_detail_serializer_with_all_relations(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             blog_category = BlogCategoryFactory()
             post = PostFactory(blog_category=blog_category)
 
@@ -731,8 +670,7 @@ class TestSerializerIntegration(TestCase):
             assert len(data["faq_entries"]) == 2
 
     def test_category_detail_serializer_with_items(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             category = CategoryFactory()
             for i in range(3):
                 CatalogItemFactory(category=category, name=f"Item {i}")
@@ -744,8 +682,7 @@ class TestSerializerIntegration(TestCase):
             assert data["items"][0]["name"] == "Item 0"
 
     def test_association_serializer_with_gallery(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             association = AssociationFactory()
             for i in range(3):
                 AssociationImageFactory(association=association)
@@ -760,17 +697,14 @@ class TestSerializerIntegration(TestCase):
 # SERIALIZER FIELD TESTS
 # ==========================================
 
-
-@pytest.mark.django_db
-class TestSerializerFields(TestCase):
+class TestSerializerFields(TenantAwareTestCase):
     def test_customer_serializer_fields(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             customer = CustomerFactory(
                 user__first_name="John",
                 user__last_name="Doe",
                 user__email="john@example.com",
-                user__tenant=client,
+                user__tenant=self.tenant,
             )
             serializer = CustomerSerializer(customer)
             data = serializer.data
@@ -779,8 +713,7 @@ class TestSerializerFields(TestCase):
             assert sorted(data.keys()) == sorted(expected_fields)
 
     def test_post_list_serializer_fields(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             post = PostFactory()
             serializer = PostListSerializer(post)
             data = serializer.data
@@ -802,8 +735,7 @@ class TestSerializerFields(TestCase):
             assert sorted(data.keys()) == sorted(expected_fields)
 
     def test_post_detail_serializer_fields(self):
-        client = ClientFactory()
-        with tenant_context(client):
+        with tenant_context(self.tenant):
             post = PostFactory()
             serializer = PostDetailSerializer(post)
             data = serializer.data
