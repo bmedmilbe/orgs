@@ -94,3 +94,4 @@ orgs_api/
 
 dev.py
 
+app/app/settings/dev.py
