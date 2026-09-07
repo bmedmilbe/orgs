@@ -119,6 +119,22 @@ class AssociationSerializer(serializers.ModelSerializer):
 # 5. CATALOGUE & ECO-TOURISM SERIALIZERS
 # ==========================================
 
+class ReviewSerializer(serializers.ModelSerializer):
+    client_name = serializers.CharField(source="client.first_name", read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ["id", "item", "client_name", "rating", "comment", "created_at"]
+        read_only_fields = ["client"]
+
+    def create(self, validated_data):
+        client = self.context["request"].user
+
+        instance, created = Review.objects.update_or_create(
+            client=client, defaults=validated_data
+        )
+
+        return instance
 
 class CatalogItemSpecificationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -129,7 +145,7 @@ class CatalogItemSpecificationSerializer(serializers.ModelSerializer):
 class CatalogItemSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True)
     specifications = CatalogItemSpecificationSerializer(many=True, read_only=True)
-
+    reviews = ReviewSerializer(many=True)
     class Meta:
         model = CatalogItem
         fields = [
@@ -143,6 +159,7 @@ class CatalogItemSerializer(serializers.ModelSerializer):
             "is_available",
             "picture",
             "specifications",
+            "reviews",
         ]
 
 
@@ -340,19 +357,4 @@ class ExtraDocSerializer(serializers.ModelSerializer):
         ]
 
 
-class ReviewSerializer(serializers.ModelSerializer):
-    client_name = serializers.CharField(source="client.first_name", read_only=True)
 
-    class Meta:
-        model = Review
-        fields = ["id", "item", "client_name", "rating", "comment", "created_at"]
-        read_only_fields = ["client"]
-
-    def create(self, validated_data):
-        client = self.context["request"].user
-
-        instance, created = Review.objects.update_or_create(
-            client=client, defaults=validated_data
-        )
-
-        return instance

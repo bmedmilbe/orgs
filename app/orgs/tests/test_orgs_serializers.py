@@ -1,4 +1,3 @@
-# orgs/tests/test_serializers.py
 
 from unittest.mock import patch
 

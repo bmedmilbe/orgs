@@ -10,6 +10,7 @@ from django.core.management.base import BaseCommand
 from django.db import IntegrityError
 from django_tenants.utils import tenant_context
 from faker import Faker
+
 from orgs.models import (
     Association,
     AssociationImage,
@@ -18,6 +19,7 @@ from orgs.models import (
     CatalogItem,
     CatalogItemSpecification,
     Category,
+    Customer,
     District,
     ExtraDoc,
     ExtraImage,
@@ -38,7 +40,7 @@ from orgs.models import (
 )
 
 User = get_user_model()
-fake = Faker(["pt_BR", "en_US", "fr_FR"])  # Prioritizing Portuguese for CECAB
+fake = Faker(["pt_BR", "en_US", "fr_FR"])
 
 
 class Command(BaseCommand):
@@ -62,23 +64,36 @@ class Command(BaseCommand):
             action="store_true",
             help="Delete existing data before populating (use with caution)",
         )
+        parser.add_argument(
+            "--tenant",
+            type=str,
+            default="cecab",
+            help="Tenant schema name to populate (default: cecab)",
+        )
 
     def handle(self, *args, **options):
         num_users = options["users"]
         num_posts = options["posts"]
         reset = options["reset"]
+        tenant_name = options["tenant"]
 
-        self.stdout.write(self.style.SUCCESS("🚀 Starting CECAB data population..."))
+        self.stdout.write(
+            self.style.SUCCESS(f"🚀 Starting data population for tenant: {tenant_name}")
+        )
 
-        # Get or create CECAB tenant
+        # Get or create tenant
         try:
-            tenant = Client.objects.get(schema_name="cecab")
-            self.stdout.write(self.style.SUCCESS("✅ Found existing tenant: cecab"))
+            tenant = Client.objects.get(schema_name=tenant_name)
+            self.stdout.write(
+                self.style.SUCCESS(f"✅ Found existing tenant: {tenant_name}")
+            )
         except Client.DoesNotExist:
-            tenant = self.create_cecab_tenant()
-            self.stdout.write(self.style.SUCCESS("✅ Created new tenant: cecab"))
+            tenant = self.create_tenant(tenant_name)
+            self.stdout.write(
+                self.style.SUCCESS(f"✅ Created new tenant: {tenant_name}")
+            )
 
-        # Switch to tenant schema
+        # Switch to tenant schema - THIS IS CRITICAL
         with tenant_context(tenant):
             self.stdout.write(
                 self.style.SUCCESS(f"🔀 Switched to schema: {tenant.schema_name}")
@@ -87,18 +102,18 @@ class Command(BaseCommand):
             if reset:
                 self.reset_data()
 
-            # Populate all data
-            self.populate_cecab_data(tenant, num_users, num_posts)
+            # Populate all data within tenant schema
+            self.populate_tenant_data(tenant, num_users, num_posts)
 
         self.stdout.write(
-            self.style.SUCCESS("🎉 CECAB data population completed successfully!")
+            self.style.SUCCESS("🎉 Data population completed successfully!")
         )
 
-    def create_cecab_tenant(self):
-        """Create the CECAB tenant with proper configuration."""
+    def create_tenant(self, schema_name):
+        """Create a tenant with proper configuration."""
         tenant = Client.objects.create(
-            schema_name="cecab",
-            name="CECAB - São Tomé e Príncipe",
+            schema_name=schema_name,
+            name=f"{schema_name.upper()} - Tenant",
             paid_until=datetime.now().date() + timedelta(days=365),
             on_trial=False,
             created_on=datetime.now().date(),
@@ -106,7 +121,7 @@ class Command(BaseCommand):
 
         # Create domain for local development
         Domain.objects.create(
-            domain="cecab.localhost",
+            domain=f"{schema_name}.localhost",
             tenant=tenant,
             is_primary=True,
         )
@@ -143,27 +158,30 @@ class Command(BaseCommand):
             ExtraDoc,
             Partner,
             YearGoal,
+            Customer,
         ]
 
         for model in models_to_delete:
             try:
                 count = model.objects.all().delete()
-                self.stdout.write(f"  - Deleted {count[0]} {model.__name__} records")
+                if count[0] > 0:
+                    self.stdout.write(f"  - Deleted {count[0]} {model.__name__} records")
             except Exception as e:
                 self.stdout.write(f"  - Error deleting {model.__name__}: {e}")
 
         # Delete users (except superusers if any)
         try:
             count = User.objects.filter(is_customer=False).delete()
-            self.stdout.write(f"  - Deleted {count[0]} regular users")
+            if count[0] > 0:
+                self.stdout.write(f"  - Deleted {count[0]} regular users")
         except Exception as e:
             self.stdout.write(f"  - Error deleting users: {e}")
 
         self.stdout.write(self.style.SUCCESS("✅ Data reset completed"))
 
-    def populate_cecab_data(self, tenant, num_users, num_posts):
-        """Populate the CECAB tenant with realistic data."""
-        self.stdout.write("📝 Populating CECAB data...")
+    def populate_tenant_data(self, tenant, num_users, num_posts):
+        """Populate the tenant with realistic data."""
+        self.stdout.write("📝 Populating tenant data...")
 
         # 1. Create or get customer user
         customer = self.get_or_create_customer_user(tenant)
@@ -174,22 +192,22 @@ class Command(BaseCommand):
         # 3. Create regular users
         regular_users = self.create_regular_users(tenant, num_users)
 
-        # 4. Create districts of São Tomé and Príncipe
+        # 4. Create districts
         districts = self.create_districts()
 
-        # 5. Create associations (cooperatives)
+        # 5. Create associations
         associations = self.create_associations(districts)
 
-        # 6. Create categories for products and services
+        # 6. Create categories
         categories = self.create_categories()
 
-        # 7. Create catalog items (chocolate, tours, accommodations)
+        # 7. Create catalog items
         catalog_items = self.create_catalog_items(categories, regular_users, tenant)
 
-        # 8. Create pages for the website
+        # 8. Create pages
         self.create_pages()
 
-        # 9. Create year goals (2024-2026)
+        # 9. Create year goals
         self.create_year_goals()
 
         # 10. Create blog categories
@@ -198,7 +216,7 @@ class Command(BaseCommand):
         # 11. Create blog posts
         self.create_posts(blog_categories, num_posts, tenant)
 
-        # 12. Create videos (CECAB Band, promotional)
+        # 12. Create videos
         self.create_videos()
 
         # 13. Create team members and roles
@@ -215,12 +233,12 @@ class Command(BaseCommand):
         self.create_partners()
 
         self.stdout.write(
-            self.style.SUCCESS("✅ All CECAB data populated successfully!")
+            self.style.SUCCESS("✅ All tenant data populated successfully!")
         )
 
     def get_or_create_customer_user(self, tenant):
-        """Get or create the CECAB customer/admin user."""
-        customer_email = "admin@cecab.st"
+        """Get or create the customer/admin user for the tenant."""
+        customer_email = f"admin@{tenant.schema_name}.st"
 
         # Try to get existing customer
         try:
@@ -243,20 +261,20 @@ class Command(BaseCommand):
         # Create new customer
         try:
             customer = User.objects.create(
-                username="cecab_admin",
+                username=f"{tenant.schema_name}_admin",
                 email=customer_email,
-                first_name="CECAB",
+                first_name=tenant.schema_name.upper(),
                 last_name="Administrador",
-                phone="+239 99 01 02",
+                phone=fake.phone_number()[:15],
                 is_customer=True,
                 is_staff=True,
                 is_superuser=True,
                 tenant=tenant,
             )
-            customer.set_password("cecab2024")
+            customer.set_password("admin2024")
             customer.save()
             self.stdout.write(
-                f"✅ Created customer user: {customer.email} (password: cecab2024)"
+                f"✅ Created customer user: {customer.email} (password: admin2024)"
             )
             return customer
         except IntegrityError:
@@ -266,21 +284,31 @@ class Command(BaseCommand):
             return customer
 
     def create_staff_users(self, tenant):
-        """Create CECAB staff users."""
+        """Create staff users for the tenant."""
         staff_data = [
-            ("João", "Costa", "joao.costa@cecab.st", "Gerente Geral"),
+            ("João", "Costa", f"joao.costa@{tenant.schema_name}.st", "Gerente Geral"),
             (
                 "Maria",
                 "Fernandes",
-                "maria.fernandes@cecab.st",
+                f"maria.fernandes@{tenant.schema_name}.st",
                 "Coordenadora de Produção",
             ),
-            ("Pedro", "Santos", "pedro.santos@cecab.st", "Responsável de Marketing"),
-            ("Ana", "Silva", "ana.silva@cecab.st", "Coordenadora de Turismo"),
+            (
+                "Pedro",
+                "Santos",
+                f"pedro.santos@{tenant.schema_name}.st",
+                "Responsável de Marketing",
+            ),
+            (
+                "Ana",
+                "Silva",
+                f"ana.silva@{tenant.schema_name}.st",
+                "Coordenadora de Turismo",
+            ),
             (
                 "Carlos",
                 "Mendes",
-                "carlos.mendes@cecab.st",
+                f"carlos.mendes@{tenant.schema_name}.st",
                 "Responsável de Relações Públicas",
             ),
         ]
@@ -304,7 +332,7 @@ class Command(BaseCommand):
                     is_superuser=False,
                     tenant=tenant,
                 )
-                user.set_password("cecabstaff2024")
+                user.set_password("staff2024")
                 user.save()
                 staff_users.append(user)
                 self.stdout.write(f"✅ Created staff: {user.email}")
@@ -362,7 +390,7 @@ class Command(BaseCommand):
             try:
                 first_name = random.choice(first_names)
                 last_name = random.choice(last_names)
-                email = f"{first_name.lower()}.{last_name.lower()}@example.com"
+                email = f"{first_name.lower()}.{last_name.lower()}@{tenant.schema_name}.com"
 
                 # Ensure unique email
                 if User.objects.filter(email=email, tenant=tenant).exists():
@@ -390,7 +418,7 @@ class Command(BaseCommand):
         return users
 
     def create_districts(self):
-        """Create districts of São Tomé and Príncipe."""
+        """Create districts."""
         districts_data = [
             "Água Grande",
             "Cantagalo",
@@ -412,7 +440,7 @@ class Command(BaseCommand):
         return districts
 
     def create_associations(self, districts):
-        """Create associations/cooperatives for CECAB."""
+        """Create associations/cooperatives."""
         associations_data = [
             ("Cooperativa Agrícola de Cantagalo", "Cantagalo"),
             ("Cooperativa Agrícola de Lembá", "Lembá"),
@@ -420,7 +448,7 @@ class Command(BaseCommand):
             ("Cooperativa dos Agricultores de Lobata", "Lobata"),
             ("Associação dos Produtores de Café e Cacau", "Mé-Zóchi"),
             ("Cooperativa Agrícola de Príncipe", "Príncipe"),
-            ("CECAB - São Tomé", "Água Grande"),
+            ("Cooperativa Central", "Água Grande"),
             ("Coopérative Agricole du Sud", "Caué"),
         ]
 
@@ -477,19 +505,19 @@ class Command(BaseCommand):
         return categories
 
     def create_catalog_items(self, categories, users, tenant):
-        """Create catalog items with realistic CECAB products and services."""
+        """Create catalog items with realistic products and services."""
         catalog_items = []
 
-        # CECAB specific products
+        # Products data
         products_data = [
             {
-                "name": "Chocolate Amargo 70% CECAB",
-                "description": "Chocolate premium com 70% de cacau de São Tomé, produzido artesanalmente",
+                "name": "Chocolate Amargo 70%",
+                "description": "Chocolate premium com 70% de cacau, produzido artesanalmente",
                 "price": 12.50,
                 "slug": "chocolate-amargo-70",
             },
             {
-                "name": "Chocolate ao Leite CECAB",
+                "name": "Chocolate ao Leite",
                 "description": "Chocolate cremoso com 40% de cacau e notas de baunilha",
                 "price": 10.00,
                 "slug": "chocolate-leite",
@@ -502,24 +530,24 @@ class Command(BaseCommand):
             },
             {
                 "name": "Tablete de Cacau 100%",
-                "description": "Puro cacau de São Tomé para confeitaria",
+                "description": "Puro cacau para confeitaria",
                 "price": 8.50,
                 "slug": "tablete-cacau",
             },
             {
-                "name": "Roça Vila - Suite Familiar",
-                "description": "Suite espaçosa na antiga roça de cacau, com vista para as plantações",
+                "name": "Suite Familiar",
+                "description": "Suite espaçosa com vista para as plantações",
                 "price": 150.00,
-                "slug": "roca-vila-suite",
+                "slug": "suite-familiar",
             },
             {
-                "name": "Roça São João - Quarto Standard",
-                "description": "Quarto confortável na histórica Roça São João",
+                "name": "Quarto Standard",
+                "description": "Quarto confortável com modernas comodidades",
                 "price": 75.00,
-                "slug": "roca-sao-joao",
+                "slug": "quarto-standard",
             },
             {
-                "name": "Tour da Plantação de Cacau",
+                "name": "Tour da Plantação",
                 "description": "Visita guiada à plantação de cacau, do grão à amêndoa",
                 "price": 25.00,
                 "slug": "tour-plantacao",
@@ -531,14 +559,14 @@ class Command(BaseCommand):
                 "slug": "oficina-chocolate",
             },
             {
-                "name": "Tour Histórico das Roças",
-                "description": "Visita às antigas roças de café e cacau de São Tomé",
+                "name": "Tour Histórico",
+                "description": "Visita às antigas roças de café e cacau",
                 "price": 35.00,
-                "slug": "tour-rocas",
+                "slug": "tour-historico",
             },
             {
-                "name": "Cesta de Presentes CECAB",
-                "description": "Conjunto de chocolates e produtos de cacau para oferecer",
+                "name": "Cesta de Presentes",
+                "description": "Conjunto de chocolates e produtos de cacau",
                 "price": 30.00,
                 "slug": "cesta-presentes",
             },
@@ -598,11 +626,11 @@ class Command(BaseCommand):
         return catalog_items
 
     def create_pages(self):
-        """Create CECAB website pages."""
+        """Create website pages."""
         pages_data = [
             ("Início", "inicio", True, 0),
             ("Sobre Nós", "sobre-nos", True, 1),
-            ("Fábrica de Chocolate", "fabrica", True, 2),
+            ("Fábrica", "fabrica", True, 2),
             ("Plantações", "plantacoes", True, 3),
             ("Turismo", "turismo", True, 4),
             ("Sustentabilidade", "sustentabilidade", True, 5),
@@ -636,7 +664,7 @@ class Command(BaseCommand):
         self.stdout.write(f"✅ Created {len(pages_data)} pages with content blocks")
 
     def create_year_goals(self):
-        """Create CECAB goals for 2024-2026."""
+        """Create year goals."""
         goals_data = [
             ("Produção de Cacau (toneladas)", 12000, 15000, 18000),
             ("Produção de Chocolate (toneladas)", 500, 800, 1200),
@@ -654,7 +682,7 @@ class Command(BaseCommand):
                     defaults={"value": Decimal(str(value)), "show_in_dashboard": True},
                 )
 
-        self.stdout.write("✅ Created year goals for 2024-2026")
+        self.stdout.write("✅ Created year goals")
 
     def create_blog_categories(self):
         """Create blog categories."""
@@ -679,22 +707,22 @@ class Command(BaseCommand):
         return categories
 
     def create_posts(self, categories, num_posts, tenant):
-        """Create blog posts for CECAB."""
-        post_titles_pt = [
-            "CECAB celebra 10 anos de produção de chocolate",
-            "Nova rota turística das roças de cacau",
-            "Projeto de sustentabilidade na Ilha do Príncipe",
-            "CECAB presente na feira internacional de chocolate",
-            "Formação de agricultores em técnicas sustentáveis",
-            "CECAB e comércio justo: uma história de sucesso",
-            "Visita guiada às plantações de cacau",
-            "Oficina de chocolate atrai turistas",
-            "CECAB investe em energias renováveis",
-            "São Tomé: o paraíso do cacau",
-            "CECAB lança novo chocolate com café",
-            "A história das roças de São Tomé",
-            "CECAB e os Objetivos de Desenvolvimento Sustentável",
-            "Agricultura familiar em São Tomé",
+        """Create blog posts."""
+        post_titles = [
+            "Celebração de 10 anos de produção",
+            "Nova rota turística das roças",
+            "Projeto de sustentabilidade",
+            "Presente na feira internacional",
+            "Formação de agricultores",
+            "Comércio justo: uma história de sucesso",
+            "Visita guiada às plantações",
+            "Oficina atrai turistas",
+            "Investimento em energias renováveis",
+            "O paraíso do cacau",
+            "Lançamento de novo chocolate",
+            "A história das roças",
+            "Objetivos de Desenvolvimento Sustentável",
+            "Agricultura familiar",
             "O futuro do chocolate sustentável",
         ]
 
@@ -704,8 +732,8 @@ class Command(BaseCommand):
             )
 
             title = (
-                random.choice(post_titles_pt)
-                if i < len(post_titles_pt)
+                random.choice(post_titles)
+                if i < len(post_titles)
                 else fake.sentence(nb_words=6)
             )
 
@@ -734,14 +762,14 @@ class Command(BaseCommand):
                 for _ in range(random.randint(2, 4)):
                     PostImage.objects.create(post=post, picture=fake.image_url())
 
-                # Add videos (CECAB Band performances)
+                # Add videos
                 if random.choice([True, False]):
                     video_title = random.choice(
                         [
-                            "CECAB Band - Festival de Chocolate",
-                            "CECAB Band - Concerto de Ano Novo",
-                            "Apresentação da CECAB Band",
-                            "Música e Tradição em São Tomé",
+                            "Performance Anual",
+                            "Festival da Cidade",
+                            "Concerto de Natal",
+                            "Apresentação Cultural",
                         ]
                     )
                     video = Video.objects.create(
@@ -771,15 +799,15 @@ class Command(BaseCommand):
         self.stdout.write(f"✅ Created {num_posts} blog posts")
 
     def create_videos(self):
-        """Create videos for CECAB Band and promotional content."""
+        """Create videos."""
         videos_data = [
-            ("CECAB Band - Performance Anual 2024", True, False),
-            ("CECAB Band - Festival da Cidade", True, False),
-            ("CECAB Band - Concerto de Natal", True, False),
-            ("CECAB Band - Apresentação Cultural", True, False),
-            ("Spot Promocional CECAB 2024", False, True),
-            ("Documentário: A História do Cacau", False, True),
-            ("Entrevista: Produtores de Cacau", False, False),
+            ("Performance Anual 2024", True, False),
+            ("Festival da Cidade", True, False),
+            ("Concerto de Natal", True, False),
+            ("Apresentação Cultural", True, False),
+            ("Spot Promocional 2024", False, True),
+            ("Documentário: A História", False, True),
+            ("Entrevista: Produtores", False, False),
         ]
 
         for title, is_band, is_spot in videos_data:
@@ -797,7 +825,7 @@ class Command(BaseCommand):
         self.stdout.write("✅ Created videos")
 
     def create_roles(self):
-        """Create CECAB organizational roles."""
+        """Create organizational roles."""
         roles_data = [
             "Presidente",
             "Vice-Presidente",
@@ -820,7 +848,7 @@ class Command(BaseCommand):
         return roles
 
     def create_team_members(self, roles):
-        """Create CECAB team members."""
+        """Create team members."""
         first_names = [
             "Manuel",
             "João",
@@ -856,7 +884,7 @@ class Command(BaseCommand):
             "Oliveira",
         ]
 
-        for i in range(15):
+        for _ in range(15):
             name = f"{random.choice(first_names)} {random.choice(last_names)}"
             role = random.choice(roles)
 
@@ -872,14 +900,14 @@ class Command(BaseCommand):
         self.stdout.write("✅ Created team members")
 
     def create_budget_documents(self):
-        """Create CECAB budget and financial documents."""
+        """Create budget and financial documents."""
         current_year = datetime.now().year
         doc_data = [
             ("B", f"Orçamento {current_year}"),
             ("B", f"Orçamento {current_year - 1}"),
             ("R", f"Relatório Anual {current_year - 1}"),
             ("R", f"Relatório de Sustentabilidade {current_year - 1}"),
-            ("L", "Estatutos da CECAB"),
+            ("L", "Estatutos"),
             ("L", "Regulamento Interno"),
         ]
 
@@ -897,7 +925,7 @@ class Command(BaseCommand):
         self.stdout.write("✅ Created budget documents")
 
     def create_extra_documents(self):
-        """Create additional CECAB documents."""
+        """Create additional documents."""
         doc_titles = [
             "Certificação de Comércio Justo",
             "Licença Ambiental",
@@ -924,14 +952,14 @@ class Command(BaseCommand):
         self.stdout.write("✅ Created extra documents")
 
     def create_partners(self):
-        """Create CECAB partner organizations."""
+        """Create partner organizations."""
         partners_data = [
             "Comércio Justo Internacional",
             "Fairtrade Foundation",
             "Rainforest Alliance",
             "Cocoa Horizons",
             "World Cocoa Foundation",
-            "Instituto do Cacau de São Tomé",
+            "Instituto do Cacau",
             "Ministério da Agricultura",
             "Sustainable Trade Initiative",
             "EcoCert",

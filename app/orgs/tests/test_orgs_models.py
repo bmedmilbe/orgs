@@ -1,4 +1,3 @@
-# orgs/tests/test_orgs_models.py
 
 from decimal import Decimal
 
@@ -6,8 +5,6 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
-
-# ❌ REMOVE: from django_tenants.test.cases import TenantTestCase
 from django_tenants.utils import tenant_context
 
 from orgs.models import (
