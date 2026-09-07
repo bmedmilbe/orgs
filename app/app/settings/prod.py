@@ -18,15 +18,22 @@ DJANGO_SETTINGS_MODULE = os.environ.get(
 )
 
 # --- DATABASE ---
-DEFAULT_DB_URL = "postgresql://postgres:your_password@your_railway_host:port/railway"
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://postgres:password@localhost:5432/dbname")
 
 DATABASES = {
     "default": dj_database_url.config(
-        default=os.environ.get("DATABASE_URL", DEFAULT_DB_URL),
-        conn_max_age=600, 
-        ssl_require=True   
+        default=DATABASE_URL, 
+        conn_max_age=600,
     )
 }
+
+DATABASES["default"]["ENGINE"] = "django_tenants.postgresql_backend"
+
+DATABASE_ROUTERS = (
+    "django_tenants.routers.TenantSyncRouter",
+)
+
+
 
 # --- AWS S3 STORAGE ---
 AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "default_aws_key")
