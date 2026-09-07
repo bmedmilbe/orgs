@@ -811,7 +811,7 @@ class Command(BaseCommand):
         ]
 
         for title, is_band, is_spot in videos_data:
-            Video.objects.get_or_create(
+            Video.objects.create(
                 title=title,
                 defaults={
                     "link": f"https://www.youtube.com/watch?v={fake.uuid4()[:8]}",
