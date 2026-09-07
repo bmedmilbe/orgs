@@ -18,11 +18,13 @@ DJANGO_SETTINGS_MODULE = os.environ.get(
 )
 
 # --- DATABASE ---
-# Falls back to an in-memory SQLite database if no URL is provided
-DEFAULT_DB_URL = "sqlite:///:memory:"
+DEFAULT_DB_URL = "postgresql://postgres:your_password@your_railway_host:port/railway"
+
 DATABASES = {
     "default": dj_database_url.config(
-        default=os.environ.get("DATABASE_URL", DEFAULT_DB_URL)
+        default=os.environ.get("DATABASE_URL", DEFAULT_DB_URL),
+        conn_max_age=600, 
+        ssl_require=True   
     )
 }
 
