@@ -65,4 +65,4 @@ USER myuser
 EXPOSE 8000
 
 # Use a safe shell form to sequence migration and application boot
-CMD python manage.py migrate && gunicorn --bind 0.0.0.0:8000 easyad.wsgi:application
+CMD python manage.py migrate && gunicorn --bind 0.0.0.0:8000 app.wsgi:application
