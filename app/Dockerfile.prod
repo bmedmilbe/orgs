@@ -29,7 +29,7 @@ FROM python:3.10-slim AS runner
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV DJANGO_SETTINGS_MODULE=easyad.settings.prod
+ENV DJANGO_SETTINGS_MODULE=app.settings.prod
 ENV PYTHONPATH=/app
 
 WORKDIR /app
@@ -52,7 +52,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY . .
 
 # Prepare static files directory and compile assets
-RUN mkdir -p /app/easyad/staticfiles
+RUN mkdir -p /app/app/staticfiles
 
 RUN adduser --disabled-password myuser
 
