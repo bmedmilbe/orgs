@@ -10,7 +10,7 @@ from orgs.tests.factories import ClientFactory
 class TenantAwareTestCase(TestCase):
     """
     Base test class that creates a tenant.
-    You must use 'with tenant_context(self.tenant):' in each test.
+    Must use 'with tenant_context(self.tenant):' in each test.
     """
 
     @classmethod
