@@ -38,6 +38,9 @@ SHARED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "django_filters",
+    "corsheaders",
+    "drf_spectacular",
+    "storages",
     "djoser",
     "core",
     "app",
@@ -61,6 +64,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -148,7 +152,24 @@ AUTHENTICATION_BACKENDS = [
 # STATIC & MEDIA FILES
 # ==============================================================================
 
-STATIC_URL = "static/"
+# --- STATIC & MEDIA FILES ---
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# --- MEDIA FILE CONFIGURATION ---
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+# --- HYBRID STORAGE CONFIGURATION ---
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",  # Produção: S3
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",  # Produção: Whitenoise
+    },
+}
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
