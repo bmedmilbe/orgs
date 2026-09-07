@@ -813,16 +813,14 @@ class Command(BaseCommand):
         for title, is_band, is_spot in videos_data:
             Video.objects.create(
                 title=title,
-                defaults={
-                    "link": f"https://www.youtube.com/watch?v={fake.uuid4()[:8]}",
-                    "picture": fake.image_url(),
-                    "is_band": is_band,
-                    "is_spot": is_spot,
-                    "created_at": fake.date_between(start_date="-2y", end_date="today"),
-                },
+                link=f"https://youtube.com{fake.uuid4()[:8]}",
+                picture=fake.image_url(),
+                is_band=is_band,
+                is_spot=is_spot,
+                created_at=fake.date_between(start_date="-2y", end_date="today")
             )
 
-        self.stdout.write("✅ Created videos")
+            self.stdout.write("✅ Created videos")
 
     def create_roles(self):
         """Create organizational roles."""
