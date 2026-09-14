@@ -15,6 +15,7 @@ from .models import (
     BlogCategory,
     Budget,
     CatalogItem,
+    CatalogItemPicture,
     CatalogItemSpecification,
     Category,
     Customer,
@@ -149,6 +150,12 @@ class CatalogItemSpecificationInline(TranslationStackedInline):
     model = CatalogItemSpecification
     extra = 1
 
+class CatalogItemPictureInline(admin.TabularInline):
+    """Allows managing and uploading pictures directly inside the CatalogItem admin page."""
+    
+    model = CatalogItemPicture
+    extra = 1  
+    fields = ("picture", "caption", "is_feature")
 
 @admin.register(Category)
 class CategoryAdmin(BaseTranslationAdminMedia, TranslationAdmin):
@@ -172,7 +179,7 @@ class CatalogItemAdmin(BaseTranslationAdminMedia, TranslationAdmin):
     readonly_fields = ("average_rating", "total_reviews")
     prepopulated_fields = {"slug": ("name_pt",)}
     search_fields = ("name", "description")
-    inlines = [CatalogItemSpecificationInline]
+    inlines = [CatalogItemSpecificationInline, CatalogItemPictureInline]
 
 
 # ==============================================================================

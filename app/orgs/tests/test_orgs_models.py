@@ -176,17 +176,36 @@ class TestDistrictModel(TenantAwareTestCase):
             assert str(district) == "North Region"
 
 
+
 class TestAssociationModel(TenantAwareTestCase):
     def test_association_creation(self):
         with tenant_context(self.tenant):
             district = DistrictFactory()
             association = AssociationFactory(
-                name="CECAB North", district=district, number_of_associated=150
+                name="CECAB North", 
+                district=district, 
+                number_of_associated=150,
+                latitude=Decimal("-23.550520"),  
+                longitude=Decimal("-46.633309")
             )
             assert association.name == "CECAB North"
             assert association.district.name == district.name
             assert association.number_of_associated == 150
             assert str(association) == "CECAB North"
+            
+            assert association.latitude == Decimal("-23.550520")
+            assert association.longitude == Decimal("-46.633309")
+
+    def test_association_factory_defaults(self):
+        """Verifies that the factory automatically generates valid bounding box coordinates."""
+        with tenant_context(self.tenant):
+            association = AssociationFactory()
+            
+            assert association.latitude is not None
+            assert -90 <= association.latitude <= 90
+            
+            assert association.longitude is not None
+            assert -180 <= association.longitude <= 180
 
     def test_association_optimized_query(self):
         with tenant_context(self.tenant):
@@ -194,6 +213,7 @@ class TestAssociationModel(TenantAwareTestCase):
             association = AssociationFactory(district=district)
             queried = Association.objects.optimized().get(id=association.id)
             assert queried.district.name == association.district.name
+
 
 
 class TestAssociationImageModel(TenantAwareTestCase):
@@ -764,8 +784,18 @@ class TestFileUploads(TenantAwareTestCase):
                 slug="test-item",
                 description="Test description",
             )
-            assert item.picture is not None
-            assert item.picture.name.startswith("orgs_api/cms/catalog/")
+            
+            item_pictures = item.pictures.all()
+            
+            assert item_pictures.exists()
+            assert len(item_pictures) == 2  
+            
+            feature_picture = item_pictures.filter(is_feature=True).first()
+            assert feature_picture is not None
+            
+            assert feature_picture.picture is not None
+            assert feature_picture.picture.name.startswith("orgs_api/cms/catalog/")
+
 
     def test_document_file_upload(self):
         with tenant_context(self.tenant):

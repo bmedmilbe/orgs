@@ -7,6 +7,7 @@ from .models import (
     BlogCategory,
     Budget,
     CatalogItem,
+    CatalogItemPicture,
     CatalogItemSpecification,
     Category,
     Customer,
@@ -107,6 +108,8 @@ class AssociationSerializer(serializers.ModelSerializer):
             "number_of_associated",
             "picture",
             "district",
+            "latitude",
+            "longitude",
             "district_name",
             "gallery_images",
         ]
@@ -140,12 +143,18 @@ class CatalogItemSpecificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = CatalogItemSpecification
         fields = ["id", "key", "value"]
-
+class CatalogItemPictureSerializer(serializers.ModelSerializer):
+    """Serializer for handling nested or standalone CatalogItem pictures."""
+    
+    class Meta:
+        model = CatalogItemPicture
+        fields = ['id', 'caption', 'is_feature']
 
 class CatalogItemSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True)
     specifications = CatalogItemSpecificationSerializer(many=True, read_only=True)
     reviews = ReviewSerializer(many=True)
+    pictures = CatalogItemPictureSerializer(many=True)
     class Meta:
         model = CatalogItem
         fields = [
@@ -157,9 +166,9 @@ class CatalogItemSerializer(serializers.ModelSerializer):
             "description",
             "price",
             "is_available",
-            "picture",
             "specifications",
             "reviews",
+            'pictures'
         ]
 
 

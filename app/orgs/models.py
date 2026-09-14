@@ -126,6 +126,21 @@ class Association(models.Model):
         District, on_delete=models.CASCADE, related_name="cms_associations"
     )
 
+    latitude = models.DecimalField(
+        max_digits=9, 
+        decimal_places=6, 
+        null=True, 
+        blank=True
+    )
+    
+    longitude = models.DecimalField(
+        max_digits=10, 
+        decimal_places=6, 
+        null=True, 
+        blank=True
+    )
+    
+
     def __str__(self) -> str:
         return f"{self.name}"
 
@@ -163,12 +178,32 @@ class CatalogItem(models.Model):
     description = models.TextField()  # Translatable
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     is_available = models.BooleanField(default=True)
-    picture = models.FileField(upload_to="orgs_api/cms/catalog/")
+    
+    
     average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
     total_reviews = models.PositiveIntegerField(default=0)
 
     def __str__(self) -> str:
         return self.name
+
+
+class CatalogItemPicture(models.Model):
+    """Stores multiple images for a single CatalogItem."""
+
+    catalog_item = models.ForeignKey(
+        CatalogItem, 
+        on_delete=models.CASCADE, 
+        related_name="pictures"  
+    )
+    picture = models.FileField(upload_to="orgs_api/cms/catalog/")
+    caption = models.CharField(max_length=150, blank=True)
+    is_feature = models.BooleanField(
+        default=False, 
+        help_text="Designates if this is the main image used in catalog listings."
+    )
+
+    def __str__(self) -> str:
+        return f"Picture for {self.catalog_item.name}"
 
 
 class CatalogItemSpecification(models.Model):

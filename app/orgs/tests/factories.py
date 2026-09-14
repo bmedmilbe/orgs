@@ -17,6 +17,7 @@ from orgs.models import (
     BlogCategory,
     Budget,
     CatalogItem,
+    CatalogItemPicture,
     CatalogItemSpecification,
     Category,
     Customer,
@@ -201,6 +202,8 @@ class AssociationFactory(DjangoModelFactory):
     number_of_associated = factory.fuzzy.FuzzyInteger(10, 500)
     picture = factory.LazyFunction(generate_image)
     district = factory.SubFactory(DistrictFactory)
+    latitude = factory.fuzzy.FuzzyDecimal(-90.000000, 90.000000,precision=6)
+    longitude = factory.fuzzy.FuzzyDecimal(-180.000000, 180.000000,precision=6)
 
 
 class AssociationImageFactory(DjangoModelFactory):
@@ -233,9 +236,22 @@ class CategoryFactorySingle(DjangoModelFactory):
     slug = factory.LazyAttribute(lambda obj: slugify(obj.name))
 
 
+
+
+class CatalogItemPictureFactory(DjangoModelFactory):
+    class Meta:
+        model = CatalogItemPicture
+
+    catalog_item = factory.SubFactory("path.to.CatalogItemFactory")  # Use your absolute import path string here to avoid circular imports
+    picture = factory.LazyFunction(generate_image)
+    caption = factory.Faker("sentence", nb_words=4)
+    is_feature = False
+
+
 class CatalogItemFactory(DjangoModelFactory):
     class Meta:
         model = CatalogItem
+        skip_postgeneration_save = True  
 
     category = factory.SubFactory(CategoryFactory)
     name = factory.Sequence(lambda n: f"Item {n}")
@@ -243,9 +259,24 @@ class CatalogItemFactory(DjangoModelFactory):
     description = factory.Faker("paragraph")
     price = factory.fuzzy.FuzzyDecimal(10, 1000)
     is_available = True
-    picture = factory.LazyFunction(generate_image)
     average_rating = factory.fuzzy.FuzzyDecimal(0, 5)
     total_reviews = factory.fuzzy.FuzzyInteger(0, 100)
+
+    @factory.post_generation
+    def pictures(self, create, extracted, **kwargs):
+        """
+        Automatically generates related pictures for the CatalogItem.
+        """
+        if not create:
+            return
+
+        if extracted:
+            for picture in extracted:
+                self.pictures.add(picture)
+        else:
+            CatalogItemPictureFactory(catalog_item=self, is_feature=True)
+            CatalogItemPictureFactory(catalog_item=self, is_feature=False)
+
 
 
 class CatalogItemSpecificationFactory(DjangoModelFactory):
