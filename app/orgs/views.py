@@ -284,7 +284,8 @@ class CatalogItemPictureViewSet(NestedScopedViewMixin, viewsets.ModelViewSet):
     Nested CRUD: /catalog-items/<catalogitem_pk>/pictures/
     """
     filter_backends = [DjangoFilterBackend]
-    
+    permission_classes = [IsTenantStaffOrReadOnly]
+
     # Define these here so NestedScopedViewMixin can pass them downstream
     scope_kwarg = "catalogitem_pk"
     scope_field = "catalog_item"
