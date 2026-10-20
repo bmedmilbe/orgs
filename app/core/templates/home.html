@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ tenant.name|default:"Organizations CMS" }}</title>
+
+    <style>
+      :root {
+        --ink: #18181b;
+        --soft: #52525b;
+        --faint: #a1a1aa;
+        --rule: #e4e4e7;
+        --bg: #fdfcfb;
+        --accent: #a16207;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        font-family: ui-serif, Georgia, "Times New Roman", serif;
+        font-size: 17px;
+        line-height: 1.65;
+        color: var(--ink);
+        background: var(--bg);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      nav,
+      footer,
+      form,
+      .label,
+      .meta,
+      .cta,
+      small {
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+
+      a {
+        color: var(--ink);
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      a:hover {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      .wrap {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+      }
+
+      header {
+        border-bottom: 1px solid var(--rule);
+        padding: 1.25rem 0;
+      }
+      header .wrap {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+      }
+      header .brand {
+        font-family: ui-serif, Georgia, serif;
+        font-weight: 700;
+        font-size: 1.125rem;
+        letter-spacing: -0.01em;
+        border: 0;
+      }
+      header .brand:hover {
+        color: var(--accent);
+        border: 0;
+      }
+      header nav ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        gap: 1.25rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        flex-wrap: wrap;
+      }
+      header nav ul li a {
+        color: var(--soft);
+        border-bottom: 0;
+      }
+      header nav ul li a:hover {
+        color: var(--ink);
+      }
+      header nav ul li:last-child a {
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .hero {
+        padding: 6rem 0 5rem;
+        border-bottom: 1px solid var(--rule);
+      }
+      .hero .label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 1.5rem;
+        display: block;
+      }
+      .hero h1 {
+        font-family: ui-serif, Georgia, serif;
+        font-size: clamp(2.25rem, 5vw, 3.75rem);
+        font-weight: 700;
+        line-height: 1.05;
+        letter-spacing: -0.025em;
+        margin: 0 0 1.5rem;
+        max-width: 32rem;
+      }
+      .hero p.lede {
+        font-size: 1.15rem;
+        color: var(--soft);
+        margin: 0 0 2rem;
+        max-width: 34rem;
+        line-height: 1.6;
+      }
+      .hero .ctas {
+        display: flex;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+        font-size: 0.9rem;
+      }
+      .hero .ctas a {
+        border-bottom: 1px solid var(--ink);
+        padding-bottom: 2px;
+        font-weight: 500;
+      }
+      .hero .ctas a:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      section {
+        padding: 4.5rem 0;
+        border-bottom: 1px solid var(--rule);
+      }
+      section:last-of-type {
+        border-bottom: 0;
+      }
+      section h2 {
+        font-family: ui-serif, Georgia, serif;
+        font-size: clamp(1.5rem, 2.2vw, 2rem);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.15;
+        margin: 0 0 1rem;
+        max-width: 30rem;
+      }
+      section > .wrap > p {
+        color: var(--soft);
+        margin: 0 0 2rem;
+        max-width: 34rem;
+      }
+      section .label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 0.75rem;
+        display: block;
+      }
+
+      .ruled {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        border-top: 1px solid var(--rule);
+      }
+      .ruled > li {
+        border-bottom: 1px solid var(--rule);
+        padding: 1.25rem 0;
+      }
+      .ruled > li:last-child {
+        border-bottom: 0;
+      }
+      .ruled .row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .ruled .title {
+        font-family: ui-serif, Georgia, serif;
+        font-weight: 600;
+        font-size: 1.05rem;
+        letter-spacing: -0.01em;
+        margin: 0;
+      }
+      .ruled .meta {
+        font-size: 0.8rem;
+        color: var(--faint);
+        font-weight: 400;
+        letter-spacing: 0.02em;
+      }
+      .ruled .desc {
+        margin: 0.35rem 0 0;
+        font-size: 0.95rem;
+        color: var(--soft);
+        max-width: 36rem;
+      }
+
+      .metrics {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 2rem 1.5rem;
+      }
+      .metrics > li {
+        border-top: 2px solid var(--ink);
+        padding-top: 0.75rem;
+      }
+      .metrics .value {
+        font-family: ui-serif, Georgia, serif;
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.05;
+      }
+      .metrics .label {
+        font-size: 0.75rem;
+        color: var(--soft);
+        letter-spacing: 0.02em;
+        margin-top: 0.35rem;
+        text-transform: none;
+        font-weight: 500;
+      }
+
+      .docs {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 3rem;
+      }
+      @media (min-width: 720px) {
+        .docs {
+          grid-template-columns: 1fr 1fr;
+          gap: 4rem;
+        }
+      }
+      .docs h2 {
+        font-size: 1.35rem;
+      }
+
+      .contact {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 3rem;
+      }
+      @media (min-width: 720px) {
+        .contact {
+          grid-template-columns: 1fr 1.1fr;
+          gap: 4rem;
+        }
+      }
+      .contact .info p {
+        color: var(--soft);
+        margin: 0 0 1.5rem;
+      }
+      .contact .info .key {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--faint);
+        margin-bottom: 0.25rem;
+      }
+      .contact .info .val {
+        color: var(--ink);
+        margin-bottom: 1.25rem;
+      }
+
+      form {
+        display: grid;
+        gap: 1.25rem;
+      }
+      form label {
+        display: grid;
+        gap: 0.35rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--soft);
+      }
+      form input,
+      form textarea {
+        width: 100%;
+        border: 0;
+        border-bottom: 1px solid var(--rule);
+        padding: 0.65rem 0;
+        background: transparent;
+        font-family: ui-serif, Georgia, serif;
+        font-size: 1rem;
+        color: var(--ink);
+        text-transform: none;
+        letter-spacing: 0;
+        transition: border-color 0.15s;
+      }
+      form input:focus,
+      form textarea:focus {
+        outline: none;
+        border-color: var(--ink);
+      }
+      form textarea {
+        resize: vertical;
+        min-height: 6rem;
+        padding-top: 0.65rem;
+      }
+      form button {
+        justify-self: start;
+        padding: 0.8rem 1.5rem;
+        border: 1px solid var(--ink);
+        background: var(--ink);
+        color: #fff;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          color 0.15s;
+      }
+      form button:hover {
+        background: transparent;
+        color: var(--ink);
+      }
+
+      footer {
+        padding: 3rem 0;
+        font-size: 0.85rem;
+        color: var(--soft);
+      }
+      footer .wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem 2rem;
+        align-items: baseline;
+        justify-content: space-between;
+      }
+      footer .name {
+        font-family: ui-serif, Georgia, serif;
+        font-weight: 700;
+        color: var(--ink);
+        font-size: 1rem;
+        letter-spacing: -0.01em;
+      }
+      footer ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+      }
+      footer ul li a {
+        color: var(--soft);
+        border: 0;
+      }
+      footer ul li a:hover {
+        color: var(--ink);
+      }
+      footer .copy {
+        flex-basis: 100%;
+        font-size: 0.78rem;
+        color: var(--faint);
+        margin-top: 0.5rem;
+      }
+
+      .empty {
+        color: var(--faint);
+        font-style: italic;
+        font-family: ui-serif, Georgia, serif;
+      }
+
+      @media (max-width: 640px) {
+        .hero {
+          padding: 4rem 0 3.5rem;
+        }
+        section {
+          padding: 3.5rem 0;
+        }
+        header .wrap {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <div class="wrap">
+        <a href="/" class="brand"
+          >{{ tenant.name|default:"Organizations CMS" }}</a
+        >
+        <nav>
+          <ul>
+            <li><a href="#about">About</a></li>
+            <li><a href="#metrics">Impact</a></li>
+            <li><a href="#catalog">Catalog</a></li>
+            <li><a href="#blog">News</a></li>
+            <li><a href="#team">Team</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li>
+              <a href="/admin/" target="_blank" rel="noopener">Admin →</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="wrap">
+        <span class="label"
+          >{{ tenant.tagline|default:"Organizations CMS" }}</span
+        >
+        <h1>
+          {% if tenant.hero_title %}{{ tenant.hero_title }}{% else %}Welcome to
+          {{ tenant.name|default:"Organizations CMS" }}{% endif %}
+        </h1>
+        <p class="lede">
+          A managed platform for your organization's pages, catalog, news, and
+          documentation.
+        </p>
+        <div class="ctas">
+          <a href="#catalog">Explore the catalog →</a>
+          <a href="#contact">Get in touch →</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="about">
+      <div class="wrap">
+        <span class="label">About</span>
+        <h2>About our organization</h2>
+        <p>
+          Learn more about who we are, what we do, and the people behind the
+          work.
+        </p>
+
+        <ul class="ruled">
+          {% for block in page_blocks %}
+          <li>
+            <div class="row"><h3 class="title">{{ block.title }}</h3></div>
+            <p class="desc">{{ block.content }}</p>
+          </li>
+          {% empty %}
+          <li class="empty">No content blocks yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section id="metrics">
+      <div class="wrap">
+        <span class="label">Impact</span>
+        <h2>Numbers that matter.</h2>
+
+        <ul class="metrics">
+          {% for goal in year_goals %}
+          <li>
+            <div class="value">{{ goal.value|floatformat:0 }}</div>
+            <div class="label">{{ goal.label }} · {{ goal.year }}</div>
+          </li>
+          {% empty %}
+          <li class="empty">No metrics yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section id="catalog">
+      <div class="wrap">
+        <span class="label">Catalog</span>
+        <h2>Products &amp; services</h2>
+        <p>
+          Browse the full catalog through the
+          <a href="/api/orgs/catalog-items/">public API</a>.
+        </p>
+
+        <ul class="ruled">
+          {% for item in catalog_items %}
+          <li>
+            <div class="row">
+              <h3 class="title">{{ item.name }}</h3>
+              <span class="meta"
+                >{% if item.price %}€{{ item.price }}{% else %}Free{% endif %} ·
+                {{ item.average_rating|floatformat:1 }}★ ({{ item.total_reviews
+                }})</span
+              >
+            </div>
+            <p class="desc">{{ item.description }}</p>
+          </li>
+          {% empty %}
+          <li class="empty">No catalog items yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section id="blog">
+      <div class="wrap">
+        <span class="label">Journal</span>
+        <h2>News &amp; stories</h2>
+
+        <ul class="ruled">
+          {% for post in posts %}
+          <li>
+            <div class="row">
+              <h3 class="title">{{ post.title }}</h3>
+              <span class="meta">{{ post.blog_category.name }}</span>
+            </div>
+            <p class="desc">{{ post.description }}</p>
+            <p style="margin-top: 0.5rem"><a href="#">Read →</a></p>
+          </li>
+          {% empty %}
+          <li class="empty">No posts published yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <span class="label">Media</span>
+        <h2>Watch</h2>
+
+        <ul class="ruled">
+          {% for video in videos %}
+          <li>
+            <div class="row">
+              <h3 class="title">{{ video.title }}</h3>
+              <a
+                href="{{ video.link }}"
+                target="_blank"
+                rel="noopener"
+                class="meta"
+                >Open ↗</a
+              >
+            </div>
+          </li>
+          {% empty %}
+          <li class="empty">No videos yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section id="team">
+      <div class="wrap">
+        <span class="label">People</span>
+        <h2>Team &amp; leadership</h2>
+
+        <ul class="ruled">
+          {% for member in team_members %}
+          <li>
+            <div class="row">
+              <h3 class="title">{{ member.name }}</h3>
+              <span class="meta"
+                >{{ member.role.title }}{% if member.from_assembly %} ·
+                Assembly{% endif %}</span
+              >
+            </div>
+          </li>
+          {% empty %}
+          <li class="empty">No team members yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section id="partners">
+      <div class="wrap">
+        <span class="label">Trusted by</span>
+        <h2>Partners</h2>
+
+        <ul class="ruled">
+          {% for partner in partners %}
+          <li>
+            <div class="row"><h3 class="title">{{ partner.title }}</h3></div>
+          </li>
+          {% empty %}
+          <li class="empty">No partners listed yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section id="docs">
+      <div class="wrap">
+        <div class="docs">
+          <div>
+            <span class="label">Transparency</span>
+            <h2>Budgets &amp; reports</h2>
+            <p style="color: var(--soft); font-size: 0.95rem">
+              Financial documents, laws and reports.
+            </p>
+            <ul class="ruled">
+              {% for doc in budgets %}
+              <li>
+                <div class="row">
+                  <a
+                    href="{{ doc.text_file.url }}"
+                    target="_blank"
+                    class="title"
+                    style="border: 0"
+                    >{{ doc.title }}</a
+                  >
+                  <span class="meta">{{ doc.year }} · {{ doc.type }}</span>
+                </div>
+              </li>
+              {% empty %}
+              <li class="empty">No budgets yet.</li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <div>
+            <span class="label">Compliance</span>
+            <h2>Certificates</h2>
+            <p style="color: var(--soft); font-size: 0.95rem">
+              Legal and quality documentation.
+            </p>
+            <ul class="ruled">
+              {% for doc in compliance_docs %}
+              <li>
+                <div class="row">
+                  <a
+                    href="{{ doc.text_file.url }}"
+                    target="_blank"
+                    class="title"
+                    style="border: 0"
+                    >{{ doc.title }}</a
+                  >
+                  <span class="meta">PDF</span>
+                </div>
+              </li>
+              {% empty %}
+              <li class="empty">No compliance docs yet.</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact">
+      <div class="wrap">
+        <div class="contact">
+          <div class="info">
+            <span class="label">Contact</span>
+            <h2>Let's talk.</h2>
+            <p>Questions, requests, or just a hello — we read every message.</p>
+
+            <div class="key">Address</div>
+            <div class="val">{{ tenant.address|default:"Not set" }}</div>
+
+            <div class="key">Email</div>
+            <div class="val">
+              {{ tenant.email|default:"contact@example.com" }}
+            </div>
+          </div>
+
+          <form method="post" action="/api/orgs/contact-messages/">
+            {% csrf_token %}
+            <label>Name <input type="text" name="name" required /></label>
+            <label>Email <input type="email" name="email" required /></label>
+            <label>Subject <input type="text" name="subject" required /></label>
+            <label
+              >Message <textarea name="text" rows="4" required></textarea>
+            </label>
+            <button type="submit">Send message</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        <span class="name">{{ tenant.name|default:"Organizations CMS" }}</span>
+        <ul>
+          <li><a href="/api/schema/">Schema</a></li>
+          <li><a href="/api/orgs/pages/">Pages</a></li>
+          <li><a href="/api/orgs/catalog-items/">Catalog</a></li>
+          <li><a href="/admin/" target="_blank" rel="noopener">Admin →</a></li>
+        </ul>
+        <p class="copy">
+          © {% now "Y" %} {{ tenant.name|default:"Organizations CMS" }}. All
+          rights reserved.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
