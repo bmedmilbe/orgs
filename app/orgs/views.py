@@ -16,7 +16,7 @@ are needed — the write serializers resolve ``<parent>_pk`` from
 """
 
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import mixins, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
@@ -507,7 +507,7 @@ class VideoViewSet(viewsets.ModelViewSet):
         return VideoWriteSerializer
 
 
-class MessageViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+class MessageViewSet(viewsets.ModelViewSet):
     """Public contact form sinkhole: anonymous POST allowed."""
 
     queryset = Message.objects.all()
