@@ -27,6 +27,7 @@ from orgs.tests.factories import (
     BlogCategoryFactorySingle,
     BudgetFactory,
     CatalogItemFactory,
+    CatalogItemPictureFactory,
     CatalogItemSpecificationFactory,
     CategoryFactory,
     CategoryFactorySingle,
@@ -53,6 +54,7 @@ from orgs.tests.factories import (
     VideoFactory,
     YearGoalFactory,
 )
+from orgs.tests.test_orgs_views_writes import generate_pic
 
 User = get_user_model()
 
@@ -784,6 +786,9 @@ class TestFileUploads(TenantAwareTestCase):
                 slug="test-item",
                 description="Test description",
             )
+            CatalogItemPictureFactory(catalog_item=item, is_feature=True)
+            CatalogItemPictureFactory(catalog_item=item)
+            
             
             item_pictures = item.pictures.all()
             
@@ -801,7 +806,8 @@ class TestFileUploads(TenantAwareTestCase):
         with tenant_context(self.tenant):
             blog_category = BlogCategoryFactory()
             post = PostFactory(
-                blog_category=blog_category, title="Test Post", slug="test-post"
+                blog_category=blog_category, title="Test Post", slug="test-post",
+                picture=generate_pic(), text_file=generate_pic()
             )
             assert post.text_file is not None
             assert post.text_file.name.startswith("orgs_api/cms/posts/documents/")

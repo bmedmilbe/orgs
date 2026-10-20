@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from io import BytesIO
 
+# tests/factories.py
 import factory
 import factory.fuzzy
 from core.models import Client
@@ -42,6 +43,7 @@ from orgs.models import (
 )
 
 User = get_user_model()
+
 
 
 # ==========================================
@@ -329,10 +331,10 @@ class PostFactory(DjangoModelFactory):
     text = factory.Faker("paragraph")
 
     # Multilingual fields
-    text_file_pt = None
+    text_file = None
     text_file_en = None
     text_file_fr = None
-    processed_text_file_pt = None
+    processed_text_file = None
     processed_text_file_en = None
     processed_text_file_fr = None
 
@@ -583,3 +585,143 @@ class AssociationWithImagesFactory(AssociationFactory):
         count = extracted or 3
         for _ in range(count):
             AssociationImageFactory(association=self)
+
+
+
+
+
+class UserFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = User
+
+    username = factory.Sequence(lambda n: f"user{n}")
+    email = factory.LazyAttribute(lambda o: f"{o.username}@example.com")
+    password = factory.PostGenerationMethodCall("set_password", "pw")
+    first_name = "Test"
+    last_name = "User"
+
+
+
+
+class DistrictFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = District
+
+    name = factory.Sequence(lambda n: f"District {n}")
+
+
+class PageFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Page
+
+    slug = factory.Sequence(lambda n: f"page-{n}")
+    title = "Página"
+    active = True
+
+
+
+
+class AssociationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Association
+
+    name = "Associação"
+    registered = "2024-01-01"
+    address = "Rua 1"
+    number_of_associated = 5
+    picture = "assoc.jpg"
+    district = factory.SubFactory(DistrictFactory)
+    latitude = 10
+    longitude = 10
+
+
+
+class CategoryFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Category
+
+    name = "Chocolates"
+    slug = factory.Sequence(lambda n: f"cat-{n}")
+
+
+class CatalogItemFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = CatalogItem
+
+    category = factory.SubFactory(CategoryFactory)
+    name = "Item"
+    slug = factory.Sequence(lambda n: f"item-{n}")
+    description = "Descrição"
+    price = "10.00"
+    is_available = True
+
+
+
+
+
+class BlogCategoryFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = BlogCategory
+
+    name = "Notícias"
+    slug = factory.Sequence(lambda n: f"blog-{n}")
+
+
+class PostFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Post
+
+    blog_category = factory.SubFactory(BlogCategoryFactory)
+    title = "Título"
+    slug = factory.Sequence(lambda n: f"post-{n}")
+    picture = "post.jpg"
+    active = True
+
+
+
+
+
+
+
+class VideoFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Video
+
+    title = "Vídeo"
+    link = "https://youtu.be/x"
+    created_at = "2024-01-01"
+
+
+
+
+
+
+
+
+class RoleFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Role
+
+    title = "Diretor"
+
+
+
+
+
+
+
+class ExtraDocFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = ExtraDoc
+
+    title = "Extra"
+    slug = factory.Sequence(lambda n: f"extra-{n}")
+    picture = "p.jpg"
+    text_file = "d.pdf"
+    active = True
+
+
+
+
+
+
