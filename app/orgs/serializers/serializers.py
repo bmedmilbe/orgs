@@ -176,9 +176,7 @@ class CatalogItemPictureSerializer(BaseReadSerializer):
         fields = ("id", "picture", "caption", "is_feature")
 
 
-class CatalogItemPictureWriteSerializer(ScopedWriteSerializer, BaseWriteSerializer):
-    scope_kwarg = "item_pk"
-    scope_field = "catalog_item"
+class CatalogItemPictureWriteSerializer( BaseWriteSerializer):
 
     class Meta:
         model = CatalogItemPicture
@@ -194,15 +192,18 @@ class CatalogItemPictureWriteSerializer(ScopedWriteSerializer, BaseWriteSerializ
         qs.update(is_feature=False)
 
     def create(self, validated_data):
+        catalogitem_pk = self.context['catalogitem_pk']
         if validated_data.get("is_feature"):
-            item_id = self.get_parent_id(self.scope_kwarg)
+            item_id = catalogitem_pk
             self._unset_siblings(item_id)
+        validated_data['catalog_item_id'] = catalogitem_pk
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         if validated_data.get("is_feature"):
             self._unset_siblings(instance.catalog_item_id, exclude_pk=instance.pk)
         return super().update(instance, validated_data)
+
 
 
 class CatalogItemSpecificationSerializer(BaseReadSerializer):

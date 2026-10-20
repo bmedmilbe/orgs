@@ -5,6 +5,7 @@ from .views import (
     AssociationViewSet,
     BlogCategoryViewSet,
     BudgetViewSet,
+    CatalogItemPictureViewSet,
     CatalogItemViewSet,
     CategoryViewSet,
     CustomerViewSet,
@@ -65,8 +66,14 @@ nested_blog_router = routers.NestedDefaultRouter(
 nested_page_router = routers.NestedDefaultRouter(
     router, r"pages", lookup="page"
 )
+nested_catalog_items_router = routers.NestedDefaultRouter(
+    router, r"catalog-items", lookup="catalogitem"
+)
 nested_blog_router.register(r"posts", PostViewSet, basename="category-posts")
 nested_page_router.register(r"blocks", PageContentBlockViewSet, basename="page-blocks")
+nested_catalog_items_router.register(r"pictures", 
+                            CatalogItemPictureViewSet, 
+                            basename="catalogitem-pictures")
 
 
 # 3. Assemble Consolidated URL Routing Matrix
@@ -75,4 +82,6 @@ urlpatterns = [
     path("", include(router.urls)),
     # Hierarchical Nested Architectural Loops
     path("", include(nested_blog_router.urls)),
+    path("", include(nested_page_router.urls)),
+    path("", include(nested_catalog_items_router.urls)),
 ]

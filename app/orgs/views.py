@@ -281,16 +281,17 @@ class CatalogItemViewSet(viewsets.ModelViewSet):
 
 class CatalogItemPictureViewSet(NestedScopedViewMixin, viewsets.ModelViewSet):
     """
-    Nested CRUD: /catalog-items/<item_pk>/pictures/
-    Parent FK resolved by CatalogItemPictureWriteSerializer from context.
+    Nested CRUD: /catalog-items/<catalogitem_pk>/pictures/
     """
-
-    permission_classes = [IsTenantStaffOrReadOnly]
     filter_backends = [DjangoFilterBackend]
+    
+    # Define these here so NestedScopedViewMixin can pass them downstream
+    scope_kwarg = "catalogitem_pk"
+    scope_field = "catalog_item"
 
     def get_queryset(self):
         qs = CatalogItemPicture.objects.select_related("catalog_item")
-        item_pk = self.kwargs.get("item_pk")
+        item_pk = self.kwargs.get("catalogitem_pk")
         if item_pk is not None:
             qs = qs.filter(catalog_item_id=item_pk)
         return qs
@@ -299,6 +300,20 @@ class CatalogItemPictureViewSet(NestedScopedViewMixin, viewsets.ModelViewSet):
         if self.request.method == "GET":
             return CatalogItemPictureSerializer
         return CatalogItemPictureWriteSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        catalogitem_slug = self.kwargs.get("catalogitem_slug")
+        
+        if catalogitem_slug:
+            try:
+                catalogitem = CatalogItem.objects.get(slug=catalogitem_slug)
+                context["catalogitem_pk"] = catalogitem.id
+            except CatalogItem.DoesNotExist:
+                pass
+                
+        return context
+
 
 
 class CatalogItemSpecificationViewSet(
