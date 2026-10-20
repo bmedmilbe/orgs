@@ -11,6 +11,7 @@ from .views import (
     DistrictViewSet,
     ExtraDocViewSet,
     MessageViewSet,
+    PageContentBlockViewSet,
     PageViewSet,
     PartnerViewSet,
     PostViewSet,
@@ -20,6 +21,8 @@ from .views import (
     VideoViewSet,
     YearGoalViewSet,
 )
+
+app_name = 'orgs'
 
 # 1. Initialize Standard Root Router
 router = routers.DefaultRouter()
@@ -59,7 +62,11 @@ router.register(r"reviews", ReviewViewSet, basename="reviews")
 nested_blog_router = routers.NestedDefaultRouter(
     router, r"categories", lookup="category"
 )
+nested_page_router = routers.NestedDefaultRouter(
+    router, r"pages", lookup="page"
+)
 nested_blog_router.register(r"posts", PostViewSet, basename="category-posts")
+nested_page_router.register(r"blocks", PageContentBlockViewSet, basename="page-blocks")
 
 
 # 3. Assemble Consolidated URL Routing Matrix
