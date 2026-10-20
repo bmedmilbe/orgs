@@ -1,0 +1,4630 @@
+openapi: 3.0.3
+info:
+  title: Orgs CMS
+  version: 1.0.0
+  description: Organizations Contents Management System
+paths:
+  /api/auth/jwt/create/:
+    post:
+      operationId: auth_jwt_create_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/auth/jwt/refresh/:
+    post:
+      operationId: auth_jwt_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/auth/jwt/verify/:
+    post:
+      operationId: auth_jwt_verify_create
+      description: |-
+        Takes a token and indicates if it is valid.  This view provides no
+        information about a token's fitness for a particular use.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenVerify'
+          description: ''
+  /api/auth/users/:
+    get:
+      operationId: auth_users_list
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+          description: ''
+    post:
+      operationId: auth_users_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantUserCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TenantUserCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TenantUserCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantUserCreate'
+          description: ''
+  /api/auth/users/{id}/:
+    get:
+      operationId: auth_users_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: auth_users_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_users_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: auth_users_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/auth/users/activation/:
+    post:
+      operationId: auth_users_activation_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Activation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Activation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Activation'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activation'
+          description: ''
+  /api/auth/users/me/:
+    get:
+      operationId: auth_users_me_retrieve
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: auth_users_me_update
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_users_me_partial_update
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: auth_users_me_destroy
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/auth/users/resend_activation/:
+    post:
+      operationId: auth_users_resend_activation_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailReset'
+          description: ''
+  /api/auth/users/reset_email/:
+    post:
+      operationId: auth_users_reset_email_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailReset'
+          description: ''
+  /api/auth/users/reset_email_confirm/:
+    post:
+      operationId: auth_users_reset_email_confirm_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirm'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsernameResetConfirm'
+          description: ''
+  /api/auth/users/reset_password/:
+    post:
+      operationId: auth_users_reset_password_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailReset'
+          description: ''
+  /api/auth/users/reset_password_confirm/:
+    post:
+      operationId: auth_users_reset_password_confirm_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRetype'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRetype'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRetype'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetConfirmRetype'
+          description: ''
+  /api/auth/users/set_email/:
+    post:
+      operationId: auth_users_set_email_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetUsername'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetUsername'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetUsername'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetUsername'
+          description: ''
+  /api/auth/users/set_password/:
+    post:
+      operationId: auth_users_set_password_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPasswordRetype'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetPasswordRetype'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetPasswordRetype'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetPasswordRetype'
+          description: ''
+  /api/orgs/associations/:
+    get:
+      operationId: orgs_associations_list
+      parameters:
+      - in: query
+        name: district
+        schema:
+          type: integer
+      - in: query
+        name: district__name
+        schema:
+          type: string
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Association'
+          description: ''
+    post:
+      operationId: orgs_associations_create
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssociationWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AssociationWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AssociationWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssociationWrite'
+          description: ''
+  /api/orgs/associations/{id}/:
+    get:
+      operationId: orgs_associations_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this association.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Association'
+          description: ''
+    put:
+      operationId: orgs_associations_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this association.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssociationWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AssociationWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AssociationWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssociationWrite'
+          description: ''
+    patch:
+      operationId: orgs_associations_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this association.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAssociationWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAssociationWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAssociationWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssociationWrite'
+          description: ''
+    delete:
+      operationId: orgs_associations_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this association.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/orgs/catalog-categories/:
+    get:
+      operationId: orgs_catalog_categories_list
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryDetail'
+          description: ''
+    post:
+      operationId: orgs_catalog_categories_create
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CategoryWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CategoryWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryWrite'
+          description: ''
+  /api/orgs/catalog-categories/{slug}/:
+    get:
+      operationId: orgs_catalog_categories_retrieve
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryDetail'
+          description: ''
+    put:
+      operationId: orgs_catalog_categories_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CategoryWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CategoryWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryWrite'
+          description: ''
+    patch:
+      operationId: orgs_catalog_categories_partial_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryWrite'
+          description: ''
+    delete:
+      operationId: orgs_catalog_categories_destroy
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/orgs/catalog-items/:
+    get:
+      operationId: orgs_catalog_items_list
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: integer
+      - in: query
+        name: category__slug
+        schema:
+          type: string
+      - in: query
+        name: is_available
+        schema:
+          type: boolean
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CatalogItem'
+          description: ''
+    post:
+      operationId: orgs_catalog_items_create
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogItemWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CatalogItemWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CatalogItemWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogItemWrite'
+          description: ''
+  /api/orgs/catalog-items/{slug}/:
+    get:
+      operationId: orgs_catalog_items_retrieve
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogItem'
+          description: ''
+    put:
+      operationId: orgs_catalog_items_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogItemWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CatalogItemWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CatalogItemWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogItemWrite'
+          description: ''
+    patch:
+      operationId: orgs_catalog_items_partial_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCatalogItemWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCatalogItemWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCatalogItemWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogItemWrite'
+          description: ''
+    delete:
+      operationId: orgs_catalog_items_destroy
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/orgs/categories/:
+    get:
+      operationId: orgs_categories_list
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BlogCategory'
+          description: ''
+    post:
+      operationId: orgs_categories_create
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlogCategoryWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BlogCategoryWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BlogCategoryWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogCategoryWrite'
+          description: ''
+  /api/orgs/categories/{category_slug}/posts/:
+    get:
+      operationId: orgs_categories_posts_list
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+      - in: path
+        name: category_slug
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: featured
+        schema:
+          type: boolean
+      - in: query
+        name: is_a_service
+        schema:
+          type: boolean
+      - in: query
+        name: is_social_service
+        schema:
+          type: boolean
+      - in: query
+        name: is_to_front
+        schema:
+          type: boolean
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PostList'
+          description: ''
+    post:
+      operationId: orgs_categories_posts_create
+      parameters:
+      - in: path
+        name: category_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PostWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PostWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostWrite'
+          description: ''
+  /api/orgs/categories/{category_slug}/posts/{slug}/:
+    get:
+      operationId: orgs_categories_posts_retrieve
+      parameters:
+      - in: path
+        name: category_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostDetail'
+          description: ''
+    put:
+      operationId: orgs_categories_posts_update
+      parameters:
+      - in: path
+        name: category_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PostWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PostWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostWrite'
+          description: ''
+    patch:
+      operationId: orgs_categories_posts_partial_update
+      parameters:
+      - in: path
+        name: category_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPostWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPostWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPostWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostWrite'
+          description: ''
+    delete:
+      operationId: orgs_categories_posts_destroy
+      parameters:
+      - in: path
+        name: category_slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/orgs/categories/{slug}/:
+    get:
+      operationId: orgs_categories_retrieve
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogCategory'
+          description: ''
+    put:
+      operationId: orgs_categories_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlogCategoryWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BlogCategoryWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BlogCategoryWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogCategoryWrite'
+          description: ''
+    patch:
+      operationId: orgs_categories_partial_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBlogCategoryWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBlogCategoryWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBlogCategoryWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogCategoryWrite'
+          description: ''
+    delete:
+      operationId: orgs_categories_destroy
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/orgs/compliance-docs/:
+    get:
+      operationId: orgs_compliance_docs_list
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExtraDoc'
+          description: ''
+    post:
+      operationId: orgs_compliance_docs_create
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtraDocWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ExtraDocWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ExtraDocWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtraDocWrite'
+          description: ''
+  /api/orgs/compliance-docs/{id}/:
+    get:
+      operationId: orgs_compliance_docs_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this extra doc.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtraDoc'
+          description: ''
+    put:
+      operationId: orgs_compliance_docs_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this extra doc.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtraDocWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ExtraDocWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ExtraDocWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtraDocWrite'
+          description: ''
+    patch:
+      operationId: orgs_compliance_docs_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this extra doc.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedExtraDocWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedExtraDocWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedExtraDocWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtraDocWrite'
+          description: ''
+    delete:
+      operationId: orgs_compliance_docs_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this extra doc.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/orgs/contact-messages/:
+    post:
+      operationId: orgs_contact_messages_create
+      description: 'Public contact form sinkhole: anonymous POST allowed.'
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Message'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Message'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/orgs/customers/:
+    get:
+      operationId: orgs_customers_list
+      description: Tenant-scoped list/detail of Customer profiles (read-only).
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Customer'
+          description: ''
+  /api/orgs/customers/{id}/:
+    get:
+      operationId: orgs_customers_retrieve
+      description: Tenant-scoped list/detail of Customer profiles (read-only).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this customer.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: ''
+  /api/orgs/districts/:
+    get:
+      operationId: orgs_districts_list
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/District'
+          description: ''
+  /api/orgs/districts/{id}/:
+    get:
+      operationId: orgs_districts_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this district.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/District'
+          description: ''
+  /api/orgs/financial-budgets/:
+    get:
+      operationId: orgs_financial_budgets_list
+      parameters:
+      - in: query
+        name: type
+        schema:
+          type: string
+          enum:
+          - B
+          - L
+          - R
+        description: |-
+          * `B` - Budget
+          * `R` - Report
+          * `L` - Law
+      - in: query
+        name: year
+        schema:
+          type: integer
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Budget'
+          description: ''
+    post:
+      operationId: orgs_financial_budgets_create
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BudgetWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BudgetWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BudgetWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetWrite'
+          description: ''
+  /api/orgs/financial-budgets/{id}/:
+    get:
+      operationId: orgs_financial_budgets_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this budget.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Budget'
+          description: ''
+    put:
+      operationId: orgs_financial_budgets_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this budget.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BudgetWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BudgetWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BudgetWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetWrite'
+          description: ''
+    patch:
+      operationId: orgs_financial_budgets_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this budget.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBudgetWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBudgetWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBudgetWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetWrite'
+          description: ''
+    delete:
+      operationId: orgs_financial_budgets_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this budget.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/orgs/metrics/:
+    get:
+      operationId: orgs_metrics_list
+      parameters:
+      - in: query
+        name: show_in_dashboard
+        schema:
+          type: boolean
+      - in: query
+        name: year
+        schema:
+          type: integer
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/YearGoal'
+          description: ''
+    post:
+      operationId: orgs_metrics_create
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/YearGoalWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/YearGoalWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/YearGoalWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YearGoalWrite'
+          description: ''
+  /api/orgs/metrics/{id}/:
+    get:
+      operationId: orgs_metrics_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this year goal.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YearGoal'
+          description: ''
+    put:
+      operationId: orgs_metrics_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this year goal.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/YearGoalWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/YearGoalWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/YearGoalWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YearGoalWrite'
+          description: ''
+    patch:
+      operationId: orgs_metrics_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this year goal.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedYearGoalWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedYearGoalWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedYearGoalWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YearGoalWrite'
+          description: ''
+    delete:
+      operationId: orgs_metrics_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this year goal.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/orgs/pages/:
+    get:
+      operationId: orgs_pages_list
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PageDetail'
+          description: ''
+    post:
+      operationId: orgs_pages_create
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PageWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PageWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PageWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageWrite'
+          description: ''
+  /api/orgs/pages/{slug}/:
+    get:
+      operationId: orgs_pages_retrieve
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageDetail'
+          description: ''
+    put:
+      operationId: orgs_pages_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PageWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PageWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PageWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageWrite'
+          description: ''
+    patch:
+      operationId: orgs_pages_partial_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPageWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPageWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPageWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageWrite'
+          description: ''
+    delete:
+      operationId: orgs_pages_destroy
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/orgs/partners/:
+    get:
+      operationId: orgs_partners_list
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Partner'
+          description: ''
+    post:
+      operationId: orgs_partners_create
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PartnerWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartnerWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerWrite'
+          description: ''
+  /api/orgs/partners/{id}/:
+    get:
+      operationId: orgs_partners_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this partner.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+          description: ''
+    put:
+      operationId: orgs_partners_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this partner.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PartnerWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartnerWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerWrite'
+          description: ''
+    patch:
+      operationId: orgs_partners_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this partner.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPartnerWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPartnerWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPartnerWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerWrite'
+          description: ''
+    delete:
+      operationId: orgs_partners_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this partner.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/orgs/reviews/:
+    get:
+      operationId: orgs_reviews_list
+      description: |-
+        Nested CRUD: /catalog-items/<catalog_item_pk>/reviews/
+
+        Parent FK is resolved by ReviewWriteSerializer from context.
+        ``client`` is bound in ``perform_create`` because it comes from the
+        request, not the URL.
+      parameters:
+      - in: query
+        name: is_approved
+        schema:
+          type: boolean
+      - in: query
+        name: rating
+        schema:
+          type: integer
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+          description: ''
+    post:
+      operationId: orgs_reviews_create
+      description: |-
+        Nested CRUD: /catalog-items/<catalog_item_pk>/reviews/
+
+        Parent FK is resolved by ReviewWriteSerializer from context.
+        ``client`` is bound in ``perform_create`` because it comes from the
+        request, not the URL.
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReviewWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReviewWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewWrite'
+          description: ''
+  /api/orgs/reviews/{id}/:
+    get:
+      operationId: orgs_reviews_retrieve
+      description: |-
+        Nested CRUD: /catalog-items/<catalog_item_pk>/reviews/
+
+        Parent FK is resolved by ReviewWriteSerializer from context.
+        ``client`` is bound in ``perform_create`` because it comes from the
+        request, not the URL.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this review.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+          description: ''
+    put:
+      operationId: orgs_reviews_update
+      description: |-
+        Nested CRUD: /catalog-items/<catalog_item_pk>/reviews/
+
+        Parent FK is resolved by ReviewWriteSerializer from context.
+        ``client`` is bound in ``perform_create`` because it comes from the
+        request, not the URL.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this review.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReviewWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReviewWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewWrite'
+          description: ''
+    patch:
+      operationId: orgs_reviews_partial_update
+      description: |-
+        Nested CRUD: /catalog-items/<catalog_item_pk>/reviews/
+
+        Parent FK is resolved by ReviewWriteSerializer from context.
+        ``client`` is bound in ``perform_create`` because it comes from the
+        request, not the URL.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this review.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReviewWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedReviewWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedReviewWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewWrite'
+          description: ''
+    delete:
+      operationId: orgs_reviews_destroy
+      description: |-
+        Nested CRUD: /catalog-items/<catalog_item_pk>/reviews/
+
+        Parent FK is resolved by ReviewWriteSerializer from context.
+        ``client`` is bound in ``perform_create`` because it comes from the
+        request, not the URL.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this review.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/orgs/roles/:
+    get:
+      operationId: orgs_roles_list
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+          description: ''
+    post:
+      operationId: orgs_roles_create
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RoleWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RoleWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleWrite'
+          description: ''
+  /api/orgs/roles/{id}/:
+    get:
+      operationId: orgs_roles_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this role.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+    put:
+      operationId: orgs_roles_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this role.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RoleWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RoleWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleWrite'
+          description: ''
+    patch:
+      operationId: orgs_roles_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this role.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRoleWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRoleWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRoleWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleWrite'
+          description: ''
+    delete:
+      operationId: orgs_roles_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this role.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/orgs/team-members/:
+    get:
+      operationId: orgs_team_members_list
+      parameters:
+      - in: query
+        name: from_assembly
+        schema:
+          type: boolean
+      - in: query
+        name: role
+        schema:
+          type: integer
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Team'
+          description: ''
+    post:
+      operationId: orgs_team_members_create
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TeamWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TeamWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamWrite'
+          description: ''
+  /api/orgs/team-members/{id}/:
+    get:
+      operationId: orgs_team_members_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this team.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+    put:
+      operationId: orgs_team_members_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this team.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TeamWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TeamWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamWrite'
+          description: ''
+    patch:
+      operationId: orgs_team_members_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this team.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTeamWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTeamWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTeamWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamWrite'
+          description: ''
+    delete:
+      operationId: orgs_team_members_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this team.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/orgs/videos/:
+    get:
+      operationId: orgs_videos_list
+      parameters:
+      - in: query
+        name: is_band
+        schema:
+          type: boolean
+      - in: query
+        name: is_spot
+        schema:
+          type: boolean
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Video'
+          description: ''
+    post:
+      operationId: orgs_videos_create
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VideoWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VideoWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoWrite'
+          description: ''
+  /api/orgs/videos/{id}/:
+    get:
+      operationId: orgs_videos_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this video.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Video'
+          description: ''
+    put:
+      operationId: orgs_videos_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this video.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VideoWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VideoWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoWrite'
+          description: ''
+    patch:
+      operationId: orgs_videos_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this video.
+        required: true
+      tags:
+      - orgs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedVideoWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedVideoWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedVideoWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoWrite'
+          description: ''
+    delete:
+      operationId: orgs_videos_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this video.
+        required: true
+      tags:
+      - orgs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    Activation:
+      type: object
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+      required:
+      - token
+      - uid
+    Association:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        registered:
+          type: string
+          format: date
+        address:
+          type: string
+          maxLength: 255
+        number_of_associated:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        picture:
+          type: string
+          format: uri
+        district:
+          allOf:
+          - $ref: '#/components/schemas/District'
+          readOnly: true
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,6})?$
+          nullable: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssociationImage'
+          readOnly: true
+      required:
+      - address
+      - district
+      - id
+      - images
+      - name
+      - number_of_associated
+      - picture
+      - registered
+    AssociationImage:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        image:
+          type: string
+          format: uri
+      required:
+      - id
+      - image
+    AssociationWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        registered:
+          type: string
+          format: date
+        address:
+          type: string
+          maxLength: 255
+        number_of_associated:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        picture:
+          type: string
+          format: uri
+        district:
+          type: integer
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,6})?$
+          nullable: true
+        name_pt:
+          type: string
+          nullable: true
+        name_fr:
+          type: string
+          nullable: true
+        name_en:
+          type: string
+          nullable: true
+        address_pt:
+          type: string
+          nullable: true
+        address_fr:
+          type: string
+          nullable: true
+        address_en:
+          type: string
+          nullable: true
+      required:
+      - address
+      - district
+      - id
+      - name
+      - number_of_associated
+      - picture
+      - registered
+    BlogCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - id
+      - name
+      - slug
+    BlogCategoryWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        name_pt:
+          type: string
+          nullable: true
+        name_fr:
+          type: string
+          nullable: true
+        name_en:
+          type: string
+          nullable: true
+      required:
+      - id
+      - name
+      - slug
+    Budget:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          nullable: true
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        text_file:
+          type: string
+          format: uri
+        date:
+          type: string
+          format: date-time
+          readOnly: true
+        year:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        type_display:
+          type: string
+          readOnly: true
+      required:
+      - date
+      - id
+      - text_file
+      - title
+      - type
+      - type_display
+    BudgetWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          nullable: true
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        text_file:
+          type: string
+          format: uri
+        year:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        title_pt:
+          type: string
+          nullable: true
+        title_fr:
+          type: string
+          nullable: true
+        title_en:
+          type: string
+          nullable: true
+      required:
+      - id
+      - text_file
+      - title
+      - type
+    CatalogItem:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Category'
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        is_available:
+          type: boolean
+        average_rating:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,2})?$
+        total_reviews:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        pictures:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogItemPicture'
+          readOnly: true
+        specifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogItemSpecification'
+          readOnly: true
+      required:
+      - category
+      - description
+      - id
+      - name
+      - pictures
+      - slug
+      - specifications
+    CatalogItemPicture:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        picture:
+          type: string
+          format: uri
+        caption:
+          type: string
+          maxLength: 150
+        is_feature:
+          type: boolean
+          description: Designates if this is the main image used in catalog listings.
+      required:
+      - id
+      - picture
+    CatalogItemSpecification:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        key:
+          type: string
+          maxLength: 255
+        value:
+          type: string
+          maxLength: 255
+      required:
+      - id
+      - key
+      - value
+    CatalogItemWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category:
+          type: integer
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        is_available:
+          type: boolean
+        name_pt:
+          type: string
+          nullable: true
+        name_fr:
+          type: string
+          nullable: true
+        name_en:
+          type: string
+          nullable: true
+        description_pt:
+          type: string
+          nullable: true
+        description_fr:
+          type: string
+          nullable: true
+        description_en:
+          type: string
+          nullable: true
+      required:
+      - category
+      - description
+      - id
+      - name
+      - slug
+    Category:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - id
+      - name
+      - slug
+    CategoryDetail:
+      type: object
+      description: Groups catalog items cleanly under taxonomies for shop filtering
+        views.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogItem'
+          readOnly: true
+      required:
+      - id
+      - items
+      - name
+      - slug
+    CategoryWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        name_pt:
+          type: string
+          nullable: true
+        name_fr:
+          type: string
+          nullable: true
+        name_en:
+          type: string
+          nullable: true
+      required:
+      - id
+      - name
+      - slug
+    Customer:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+      required:
+      - email
+      - first_name
+      - id
+      - last_name
+    District:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+      required:
+      - id
+      - name
+    ExtraDoc:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          nullable: true
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        picture:
+          type: string
+          format: uri
+          nullable: true
+        text_file:
+          type: string
+          format: uri
+        active:
+          type: boolean
+        date:
+          type: string
+          format: date-time
+          readOnly: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExtraImage'
+          readOnly: true
+      required:
+      - date
+      - id
+      - images
+      - text_file
+      - title
+    ExtraDocWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          nullable: true
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        picture:
+          type: string
+          format: uri
+          nullable: true
+        text_file:
+          type: string
+          format: uri
+        active:
+          type: boolean
+        title_pt:
+          type: string
+          nullable: true
+        title_fr:
+          type: string
+          nullable: true
+        title_en:
+          type: string
+          nullable: true
+      required:
+      - id
+      - text_file
+      - title
+    ExtraImage:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        picture:
+          type: string
+          format: uri
+      required:
+      - id
+      - picture
+    Information:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        question:
+          type: string
+          maxLength: 255
+        information:
+          type: string
+      required:
+      - id
+      - information
+      - question
+    Message:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        subject:
+          type: string
+          maxLength: 255
+        text:
+          type: string
+        sent:
+          type: boolean
+        date:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - date
+      - email
+      - id
+      - name
+      - subject
+      - text
+    PageDetail:
+      type: object
+      description: Returns a holistic page container holding sorted component content
+        arrays.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        active:
+          type: boolean
+        order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        blocks:
+          type: string
+          readOnly: true
+      required:
+      - blocks
+      - id
+      - slug
+      - title
+    PageWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        active:
+          type: boolean
+        order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        title_pt:
+          type: string
+          nullable: true
+        title_fr:
+          type: string
+          nullable: true
+        title_en:
+          type: string
+          nullable: true
+      required:
+      - id
+      - slug
+      - title
+    Partner:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        picture:
+          type: string
+          format: uri
+      required:
+      - id
+      - picture
+      - title
+    PartnerWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        picture:
+          type: string
+          format: uri
+      required:
+      - id
+      - picture
+      - title
+    PasswordResetConfirmRetype:
+      type: object
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+        new_password:
+          type: string
+        re_new_password:
+          type: string
+      required:
+      - new_password
+      - re_new_password
+      - token
+      - uid
+    PatchedAssociationWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        registered:
+          type: string
+          format: date
+        address:
+          type: string
+          maxLength: 255
+        number_of_associated:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        picture:
+          type: string
+          format: uri
+        district:
+          type: integer
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,6})?$
+          nullable: true
+        name_pt:
+          type: string
+          nullable: true
+        name_fr:
+          type: string
+          nullable: true
+        name_en:
+          type: string
+          nullable: true
+        address_pt:
+          type: string
+          nullable: true
+        address_fr:
+          type: string
+          nullable: true
+        address_en:
+          type: string
+          nullable: true
+    PatchedBlogCategoryWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        name_pt:
+          type: string
+          nullable: true
+        name_fr:
+          type: string
+          nullable: true
+        name_en:
+          type: string
+          nullable: true
+    PatchedBudgetWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          nullable: true
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        text_file:
+          type: string
+          format: uri
+        year:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        title_pt:
+          type: string
+          nullable: true
+        title_fr:
+          type: string
+          nullable: true
+        title_en:
+          type: string
+          nullable: true
+    PatchedCatalogItemWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category:
+          type: integer
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        is_available:
+          type: boolean
+        name_pt:
+          type: string
+          nullable: true
+        name_fr:
+          type: string
+          nullable: true
+        name_en:
+          type: string
+          nullable: true
+        description_pt:
+          type: string
+          nullable: true
+        description_fr:
+          type: string
+          nullable: true
+        description_en:
+          type: string
+          nullable: true
+    PatchedCategoryWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        name_pt:
+          type: string
+          nullable: true
+        name_fr:
+          type: string
+          nullable: true
+        name_en:
+          type: string
+          nullable: true
+    PatchedExtraDocWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          nullable: true
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        picture:
+          type: string
+          format: uri
+          nullable: true
+        text_file:
+          type: string
+          format: uri
+        active:
+          type: boolean
+        title_pt:
+          type: string
+          nullable: true
+        title_fr:
+          type: string
+          nullable: true
+        title_en:
+          type: string
+          nullable: true
+    PatchedPageWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        active:
+          type: boolean
+        order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        title_pt:
+          type: string
+          nullable: true
+        title_fr:
+          type: string
+          nullable: true
+        title_en:
+          type: string
+          nullable: true
+    PatchedPartnerWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        picture:
+          type: string
+          format: uri
+    PatchedPostWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        blog_category:
+          type: integer
+          nullable: true
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        picture:
+          type: string
+          format: uri
+        text_file:
+          type: string
+          format: uri
+          nullable: true
+        text_file_pt:
+          type: string
+          format: uri
+          nullable: true
+          title: Portuguese Document (DOCX)
+        text_file_en:
+          type: string
+          format: uri
+          nullable: true
+          title: English Document (DOCX)
+        text_file_fr:
+          type: string
+          format: uri
+          nullable: true
+          title: French Document (DOCX)
+        active:
+          type: boolean
+        featured:
+          type: boolean
+        is_a_service:
+          type: boolean
+        is_social_service:
+          type: boolean
+        is_to_front:
+          type: boolean
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        text:
+          type: string
+          nullable: true
+        title_pt:
+          type: string
+          nullable: true
+        title_fr:
+          type: string
+          nullable: true
+        title_en:
+          type: string
+          nullable: true
+        description_pt:
+          type: string
+          nullable: true
+        description_fr:
+          type: string
+          nullable: true
+        description_en:
+          type: string
+          nullable: true
+        text_pt:
+          type: string
+          nullable: true
+        text_fr:
+          type: string
+          nullable: true
+        text_en:
+          type: string
+          nullable: true
+    PatchedReviewWrite:
+      type: object
+      description: |-
+        Resolves a parent scope ID from the view's URL kwargs (preferred)
+        or a direct serializer context value.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+        comment:
+          type: string
+    PatchedRoleWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        title_pt:
+          type: string
+          nullable: true
+        title_fr:
+          type: string
+          nullable: true
+        title_en:
+          type: string
+          nullable: true
+    PatchedTeamWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        image:
+          type: string
+          format: uri
+          nullable: true
+        role:
+          type: integer
+        from_assembly:
+          type: boolean
+    PatchedUser:
+      type: object
+      properties:
+        username:
+          type: string
+          maxLength: 150
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+    PatchedVideoWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        link:
+          type: string
+          format: uri
+          maxLength: 200
+        picture:
+          type: string
+          format: uri
+          nullable: true
+        is_band:
+          type: boolean
+        is_spot:
+          type: boolean
+        created_at:
+          type: string
+          format: date
+        title_pt:
+          type: string
+          nullable: true
+        title_fr:
+          type: string
+          nullable: true
+        title_en:
+          type: string
+          nullable: true
+    PatchedYearGoalWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        year:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        label:
+          type: string
+          maxLength: 255
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        show_in_dashboard:
+          type: boolean
+        label_pt:
+          type: string
+          nullable: true
+        label_fr:
+          type: string
+          nullable: true
+        label_en:
+          type: string
+          nullable: true
+    PostDetail:
+      type: object
+      description: Comprehensive blog rendering object supporting dynamic parser JSON
+        injections.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/BlogCategory'
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        picture:
+          type: string
+          format: uri
+        text_file:
+          type: string
+          format: uri
+          nullable: true
+        processed_text_file:
+          type: string
+          format: uri
+          nullable: true
+          description: Auto-generated JSON file with processed HTML content
+        active:
+          type: boolean
+        date:
+          type: string
+          format: date-time
+          readOnly: true
+        featured:
+          type: boolean
+        is_a_service:
+          type: boolean
+        is_social_service:
+          type: boolean
+        is_to_front:
+          type: boolean
+        description:
+          type: string
+          nullable: true
+        text:
+          type: string
+          nullable: true
+        gallery_images:
+          type: string
+          readOnly: true
+        gallery_videos:
+          type: string
+          readOnly: true
+        downloadable_documents:
+          type: string
+          readOnly: true
+        faq_entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Information'
+          readOnly: true
+        parsed_json_data:
+          type: string
+          readOnly: true
+      required:
+      - category
+      - date
+      - downloadable_documents
+      - faq_entries
+      - gallery_images
+      - gallery_videos
+      - id
+      - parsed_json_data
+      - picture
+      - slug
+      - title
+    PostList:
+      type: object
+      description: Lightweight post serializer to render fast list views or cards.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        category_slug:
+          type: string
+          readOnly: true
+        picture:
+          type: string
+          format: uri
+        active:
+          type: boolean
+        date:
+          type: string
+          format: date-time
+          readOnly: true
+        featured:
+          type: boolean
+        is_a_service:
+          type: boolean
+        is_social_service:
+          type: boolean
+        is_to_front:
+          type: boolean
+        description:
+          type: string
+          nullable: true
+      required:
+      - category_slug
+      - date
+      - id
+      - picture
+      - slug
+      - title
+    PostWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        blog_category:
+          type: integer
+          nullable: true
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[-a-zA-Z0-9_]+$
+        picture:
+          type: string
+          format: uri
+        text_file:
+          type: string
+          format: uri
+          nullable: true
+        text_file_pt:
+          type: string
+          format: uri
+          nullable: true
+          title: Portuguese Document (DOCX)
+        text_file_en:
+          type: string
+          format: uri
+          nullable: true
+          title: English Document (DOCX)
+        text_file_fr:
+          type: string
+          format: uri
+          nullable: true
+          title: French Document (DOCX)
+        active:
+          type: boolean
+        featured:
+          type: boolean
+        is_a_service:
+          type: boolean
+        is_social_service:
+          type: boolean
+        is_to_front:
+          type: boolean
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        text:
+          type: string
+          nullable: true
+        title_pt:
+          type: string
+          nullable: true
+        title_fr:
+          type: string
+          nullable: true
+        title_en:
+          type: string
+          nullable: true
+        description_pt:
+          type: string
+          nullable: true
+        description_fr:
+          type: string
+          nullable: true
+        description_en:
+          type: string
+          nullable: true
+        text_pt:
+          type: string
+          nullable: true
+        text_fr:
+          type: string
+          nullable: true
+        text_en:
+          type: string
+          nullable: true
+      required:
+      - id
+      - picture
+      - slug
+      - title
+    Review:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        item:
+          type: integer
+        client:
+          type: integer
+        client_username:
+          type: string
+          readOnly: true
+        rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+        comment:
+          type: string
+        is_approved:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - client
+      - client_username
+      - comment
+      - created_at
+      - id
+      - item
+      - rating
+    ReviewWrite:
+      type: object
+      description: |-
+        Resolves a parent scope ID from the view's URL kwargs (preferred)
+        or a direct serializer context value.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+        comment:
+          type: string
+      required:
+      - comment
+      - id
+      - rating
+    Role:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+      required:
+      - id
+      - title
+    RoleWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        title_pt:
+          type: string
+          nullable: true
+        title_fr:
+          type: string
+          nullable: true
+        title_en:
+          type: string
+          nullable: true
+      required:
+      - id
+      - title
+    SendEmailReset:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
+    SetPasswordRetype:
+      type: object
+      properties:
+        new_password:
+          type: string
+        re_new_password:
+          type: string
+        current_password:
+          type: string
+      required:
+      - current_password
+      - new_password
+      - re_new_password
+    SetUsername:
+      type: object
+      properties:
+        current_password:
+          type: string
+        new_email:
+          type: string
+          format: email
+          title: Email
+          maxLength: 254
+      required:
+      - current_password
+      - new_email
+    Team:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        image:
+          type: string
+          format: uri
+          nullable: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/Role'
+          readOnly: true
+        from_assembly:
+          type: boolean
+      required:
+      - id
+      - name
+      - role
+    TeamWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        image:
+          type: string
+          format: uri
+          nullable: true
+        role:
+          type: integer
+        from_assembly:
+          type: boolean
+      required:
+      - id
+      - name
+      - role
+    TenantUserCreate:
+      type: object
+      properties:
+        username:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+        phone:
+          type: string
+        first_name:
+          type: string
+          title: Primeiro nome
+          maxLength: 150
+        last_name:
+          type: string
+          title: Último nome
+          maxLength: 150
+        is_customer:
+          type: boolean
+        id:
+          type: integer
+          readOnly: true
+      required:
+      - email
+      - id
+      - password
+      - phone
+      - username
+    TokenObtainPair:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - email
+      - password
+      - refresh
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    TokenVerify:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+      required:
+      - token
+    TypeEnum:
+      enum:
+      - B
+      - R
+      - L
+      type: string
+      description: |-
+        * `B` - Budget
+        * `R` - Report
+        * `L` - Law
+    User:
+      type: object
+      properties:
+        username:
+          type: string
+          maxLength: 150
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+      required:
+      - email
+      - id
+      - username
+    UsernameResetConfirm:
+      type: object
+      properties:
+        new_email:
+          type: string
+          format: email
+          title: Email
+          maxLength: 254
+      required:
+      - new_email
+    Video:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        link:
+          type: string
+          format: uri
+          maxLength: 200
+        picture:
+          type: string
+          format: uri
+          nullable: true
+        is_band:
+          type: boolean
+        is_spot:
+          type: boolean
+        created_at:
+          type: string
+          format: date
+      required:
+      - created_at
+      - id
+      - link
+      - title
+    VideoWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        link:
+          type: string
+          format: uri
+          maxLength: 200
+        picture:
+          type: string
+          format: uri
+          nullable: true
+        is_band:
+          type: boolean
+        is_spot:
+          type: boolean
+        created_at:
+          type: string
+          format: date
+        title_pt:
+          type: string
+          nullable: true
+        title_fr:
+          type: string
+          nullable: true
+        title_en:
+          type: string
+          nullable: true
+      required:
+      - created_at
+      - id
+      - link
+      - title
+    YearGoal:
+      type: object
+      description: Base for read serializers. Read-only by convention.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        year:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        label:
+          type: string
+          maxLength: 255
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        show_in_dashboard:
+          type: boolean
+      required:
+      - id
+      - value
+      - year
+    YearGoalWrite:
+      type: object
+      description: |-
+        Base for write serializers. Handles translation field expansion
+        and default-language validation automatically.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        year:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        label:
+          type: string
+          maxLength: 255
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        show_in_dashboard:
+          type: boolean
+        label_pt:
+          type: string
+          nullable: true
+        label_fr:
+          type: string
+          nullable: true
+        label_en:
+          type: string
+          nullable: true
+      required:
+      - id
+      - value
+      - year
+  securitySchemes:
+    jwtAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "JWT"

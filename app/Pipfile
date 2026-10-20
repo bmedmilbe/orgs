@@ -15,7 +15,6 @@ drf-nested-routers = "==0.94.1"
 django-cors-headers = "==4.7.0"
 djoser = "==2.3.1"
 django-filter = "==25.1"
-drf-spectacular = "*"
 
 # Multi-Language Translation Layer
 django-modeltranslation = "==0.19.17"
@@ -39,6 +38,10 @@ psycopg2-binary = "==2.9.0"
 gunicorn = "==23.0.0"
 whitenoise = "==6.9.0"
 faker = "*"
+django-web-components = "*"
+django-jazzmin = "*"
+django-admin-interface = "*"
+drf-spectacular = "*"
 
 [dev-packages]
 # Linters & Formatters
