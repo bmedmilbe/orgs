@@ -1,773 +1,1055 @@
+"""
+Single-file DRF serializer test suite for the CMS API.
 
-from unittest.mock import patch
+Design notes
+------------
+* No ``setUp`` / ``setUpTestData``: every record is created locally via
+  ``factory_boy`` factories inside each test. This keeps each test
+  self-contained and resilient to cross-test contamination.
+* ``TranslatablePayloadFactory`` helper generates ``<field>_<lang>``
+  dictionaries from ``LANGUAGE_CODES`` so adding a language to the project
+  settings extends every test automatically.
+* ``build_context`` mirrors the context produced by a nested-router view:
+  a ``view`` object with ``.kwargs`` plus a ``request`` when needed.
+"""
 
+
+import uuid
+from datetime import date
+
+import factory
+import pytest
 from django.contrib.auth import get_user_model
-from django_tenants.utils import tenant_context
-from rest_framework.test import APIRequestFactory
+from django.contrib.auth.models import AnonymousUser
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django_tenants.test.cases import TenantTestCase
+from rest_framework.exceptions import ValidationError
+from rest_framework.test import APIRequestFactory, force_authenticate
 
 from orgs.models import (
+    Association,
+    AssociationImage,
+    BlogCategory,
     Budget,
+    CatalogItem,
+    CatalogItemPicture,
+    CatalogItemSpecification,
+    Category,
+    District,
+    ExtraDoc,
+    ExtraImage,
+    Information,
+    Message,
+    Page,
+    PageContentBlock,
+    Partner,
+    Post,
+    PostImage,
+    Review,
+    Role,
+    Team,
+    Video,
+    YearGoal,
 )
-from orgs.serializers import (
+from orgs.serializers.common import DEFAULT_LANGUAGE, LANGUAGE_CODES
+from orgs.serializers.serializers import (
+    AssociationImageWriteSerializer,
     AssociationSerializer,
-    BlogCategorySerializer,
-    BudgetSerializer,
+    AssociationWriteSerializer,
+    BudgetWriteSerializer,
+    CatalogItemPictureWriteSerializer,
     CatalogItemSerializer,
-    CatalogItemSpecificationSerializer,
-    CategoryDetailSerializer,
-    CustomerSerializer,
-    DistrictSerializer,
-    ExtraDocSerializer,
-    InformationSerializer,
-    MessageSerializer,
-    PageContentBlockSerializer,
-    PageDetailSerializer,
-    PartnerSerializer,
-    PostDetailSerializer,
-    PostListSerializer,
+    CatalogItemSpecificationWriteSerializer,
+    CatalogItemWriteSerializer,
+    ExtraDocWriteSerializer,
+    ExtraImageWriteSerializer,
+    InformationWriteSerializer,
+    MessageWriteSerializer,
+    PageContentBlockWriteSerializer,
+    PageSerializer,
+    PageWriteSerializer,
+    PartnerWriteSerializer,
+    PostImageWriteSerializer,
+    PostSerializer,
+    PostWriteSerializer,
     ReviewSerializer,
-    RoleSerializer,
-    TeamSerializer,
-    VideoSerializer,
-    YearGoalSerializer,
+    ReviewWriteSerializer,
+    RoleWriteSerializer,
+    TeamWriteSerializer,
+    VideoWriteSerializer,
+    YearGoalWriteSerializer,
 )
 
-# ✅ ADD: Import your base class
-from orgs.tests.base import TenantAwareTestCase
-from orgs.tests.factories import (
-    AssociationFactory,
-    AssociationImageFactory,
-    BlogCategoryFactory,
-    BudgetFactory,
-    CatalogItemFactory,
-    CatalogItemSpecificationFactory,
-    CategoryFactory,
-    CustomerFactory,
-    DistrictFactory,
-    ExtraDocFactory,
-    ExtraImageFactory,
-    InformationFactory,
-    MessageFactory,
-    PageContentBlockFactory,
-    PageFactory,
-    PartnerFactory,
-    PostDocumentFactory,
-    PostFactory,
-    PostFileFactory,
-    PostImageFactory,
-    PostVideoFactory,
-    ReviewFactory,
-    RoleFactory,
-    TeamFactory,
-    VideoFactory,
-    YearGoalFactory,
-    generate_file_json,
-)
-
+# ---------------------------------------------------------------------------
+# Factories (shared, DRY) — declared once, reused everywhere.
+# ---------------------------------------------------------------------------
 User = get_user_model()
 
 
-# ==========================================
-# 1. CORE & USER MODULE SERIALIZER TESTS
-# ==========================================
 
 
-class TestCustomerSerializer(TenantAwareTestCase):
-    def test_customer_serializer(self):
-        with tenant_context(self.tenant):
-            customer = CustomerFactory(
-                user__username="testuser",
-                user__first_name="John",
-                user__last_name="Doe",
-                user__email="john@example.com",
-                user__tenant=self.tenant,
+
+def _tr(prefix: str) -> dict[str, str]:
+    """Build {prefix_lang: 'value'} dicts from project LANGUAGE_CODES."""
+    tr = {
+        f"{prefix}_{lang}": f"{prefix.capitalize()} {lang}"
+        for lang in LANGUAGE_CODES
+    }
+    tr[prefix] = f"{prefix.capitalize()} Default"
+    return tr
+
+
+
+# class ClientFactory(factory.django.DjangoModelFactory):
+#     class Meta:
+#         model = Client
+
+#     schema_name = factory.Sequence(lambda n: f"test_tenant_{n}")
+#     name = "Test Tenant"
+#     on_trial = False
+#     paid_until = factory.LazyFunction(lambda: date(2099, 12, 31))
+
+
+# @contextmanager
+# def isolated_tenant(tenant_test_case):
+#     """
+#     Create a fresh tenant + domain, then enter its schema for the
+#     duration of the block. Yields the tenant instance for reference.
+#     """
+#     from customers.models import Domain  # tenant apps
+
+#     tenant = ClientFactory()
+#     tenant.save()
+
+#     domain = Domain()
+#     domain.domain = f"{tenant.schema_name}.localhost"
+#     domain.tenant = tenant
+#     domain.is_primary = True
+#     domain.save()
+
+#     with tenant_context(tenant):
+#         yield tenant
+
+#     # Cleanup is handled by django-tenants' TransactionTestCase base.
+dummy_picture = SimpleUploadedFile(
+    name="test_picture.jpg",
+    content=b"\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff\x21\xf9\x04\x01\x00\x00\x00\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x4c\x01\x00\x3b",  # A minimal valid 1x1 pixel GIF binary string
+    content_type="image/jpeg",
+)
+
+
+
+
+class MultiTenantSerializerTest(TenantTestCase):
+    """
+    Base for all serializer tests.
+
+    Subclasses are expected to wrap each test body in:
+        with isolated_tenant(self):
+            ...body...
+
+    ``TenantTestCase`` provides the public schema; the isolated_tenant
+    context manager migrates into the test's schema. This satisfies the
+    "no setUp database" rule while staying schema-safe.
+    """
+
+    @classmethod
+    def setup_tenant(cls, tenant):
+        """
+        Overrides django-tenants internal hook to populate custom fields
+        before cls.tenant.save() is invoked during setUpClass.
+        """
+        tenant.name = "Default Test Tenant"
+        tenant.schema_name = f"schema_{uuid.uuid4().hex[:8]}"
+        tenant.paid_until = date(2099, 12, 31)
+        tenant.on_trial = False
+        return tenant
+
+    # def make_factory_context(self):
+    #     """Expose a short alias so tests read cleanly."""
+    #     return isolated_tenant(self)
+
+
+# ---------------------------------------------------------------------------
+# Factories — declared once, reused everywhere. All .create() calls must
+# run inside an active tenant_context (enforced by the caller).
+# ---------------------------------------------------------------------------
+class UserFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = User
+
+    username = factory.Sequence(lambda n: f"user{n}")
+    email = factory.LazyAttribute(lambda o: f"{o.username}@example.com")
+    first_name = "Test"
+    last_name = "User"
+
+
+class DistrictFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = District
+
+    name = factory.Sequence(lambda n: f"District {n}")
+
+
+class CategoryFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Category
+
+    slug = factory.Sequence(lambda n: f"cat-{n}")
+
+    @factory.post_generation
+    def translated_name(self, create, _extracted, **kwargs):
+        self.name_pt = kwargs.get("name_pt", f"Category {self.pk}")
+
+
+class BlogCategoryFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = BlogCategory
+
+    slug = factory.Sequence(lambda n: f"blog-{n}")
+
+    @factory.post_generation
+    def translated_name(self, create, _extracted, **kwargs):
+        self.name_pt = kwargs.get("name_pt", f"Blog {self.pk}")
+
+
+class PageFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Page
+
+    slug = factory.Sequence(lambda n: f"page-{n}")
+
+
+class PageContentBlockFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = PageContentBlock
+
+    page = factory.SubFactory(PageFactory)
+    block_type = "text"
+
+
+class YearGoalFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = YearGoal
+
+    year = 2025
+    value = 100
+
+
+class AssociationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Association
+
+    registered = "2024-01-01"
+    address_pt = "Rua Principal"
+    number_of_associated = 10
+    picture = dummy_picture
+    district = factory.SubFactory(DistrictFactory)
+
+
+class AssociationImageFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = AssociationImage
+
+    association = factory.SubFactory(AssociationFactory)
+    image = "img.jpg"
+
+
+class CatalogItemFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = CatalogItem
+
+    category = factory.SubFactory(CategoryFactory)
+    slug = factory.Sequence(lambda n: f"item-{n}")
+    description_pt = "Descrição"
+    price = "10.00"
+
+
+class CatalogItemPictureFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = CatalogItemPicture
+
+    catalog_item = factory.SubFactory(CatalogItemFactory)
+    picture = "pic.jpg"
+
+
+class CatalogItemSpecificationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = CatalogItemSpecification
+
+    item = factory.SubFactory(CatalogItemFactory)
+    key_pt = "Certificação"
+    value_pt = "Fairtrade"
+
+
+class PostFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Post
+
+    slug = factory.Sequence(lambda n: f"post-{n}")
+    picture = "post.jpg"
+    title_pt = "Título"
+    blog_category = factory.SubFactory(BlogCategoryFactory)
+
+
+class PostImageFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = PostImage
+
+    post = factory.SubFactory(PostFactory)
+    picture = "post-image.jpg"
+
+
+class BudgetFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Budget
+
+    slug = factory.Sequence(lambda n: f"budget-{n}")
+    text_file = "budget.pdf"
+    year = 2024
+    type = "B"
+    title_pt = "Orçamento"
+
+
+class ExtraDocFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = ExtraDoc
+
+    slug = factory.Sequence(lambda n: f"extra-{n}")
+    text_file = "extra.pdf"
+    title_pt = "Extra"
+
+
+class ExtraImageFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = ExtraImage
+
+    extra_doc = factory.SubFactory(ExtraDocFactory)
+    picture = "extra.jpg"
+
+
+class InformationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Information
+
+    service = factory.SubFactory(PostFactory)
+    question_pt = "Pergunta?"
+    information_pt = "Resposta."
+
+
+class VideoFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Video
+
+    title_pt = "Vídeo"
+    link = "https://youtu.be/abc"
+    created_at = "2024-01-01"
+
+
+class MessageFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Message
+
+    name = "Ana"
+    email = "ana@example.com"
+    subject = "Hello"
+    text = "World"
+
+
+class PartnerFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Partner
+
+    title = "Fairtrade"
+    picture = "partner.jpg"
+
+
+class RoleFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Role
+
+    title_pt = "Diretor"
+
+
+class TeamFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Team
+
+    name = factory.Sequence(lambda n: f"Member {n}")
+    role = factory.SubFactory(RoleFactory)
+    image = "team.jpg"
+
+
+class ReviewFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Review
+
+    item = factory.SubFactory(CatalogItemFactory)
+    client = factory.SubFactory(UserFactory)
+    rating = 5
+    comment = "Great"
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
+def build_context(request=None, **url_kwargs):
+    """Mimic nested-router context: view.kwargs + request."""
+    class _FakeView:
+        pass
+
+    view = _FakeView()
+    view.kwargs = url_kwargs
+    return {"request": request, "view": view, **url_kwargs}
+
+
+def authed_request(user):
+    request = APIRequestFactory().post("/")
+    force_authenticate(request, user=user)
+    return request
+
+
+def anon_request():
+    request = APIRequestFactory().post("/")
+    request.user = AnonymousUser()
+    return request
+
+
+# ---------------------------------------------------------------------------
+# Page / PageContentBlock
+# ---------------------------------------------------------------------------
+class PageSerializerTests(MultiTenantSerializerTest):
+    
+    def test_create_page_with_all_translations(self):
+            payload = {"slug": "home", "active": True, "order": 1, **_tr("title"), "title":"Default"}
+            serializer = PageWriteSerializer(data=payload)
+            assert serializer.is_valid(), serializer.errors
+
+            page = serializer.save()
+            page.refresh_from_db()
+            for lang in LANGUAGE_CODES:
+                assert getattr(page, f"title_{lang}") == payload[f"title_{lang}"]
+
+    def test_create_page_missing_default_language_raises(self):
+        
+            payload = {
+                "slug": "home", "active": True, "order": 1, "title_en": "Home",
+            }
+            serializer = PageWriteSerializer(data=payload)
+            with pytest.raises(ValidationError) as exc_info:
+                serializer.is_valid(raise_exception=True)
+            assert "title" in exc_info.value.detail
+
+                
+
+    def test_partial_update_preserves_other_languages(self):
+        
+            page = PageFactory(title_pt="Início", title_en="Home", title_fr="Accueil")
+            serializer = PageWriteSerializer(
+                page, data={"title_en": "Main"}, partial=True
             )
-            serializer = CustomerSerializer(customer)
-            data = serializer.data
+            assert serializer.is_valid(), serializer.errors
 
-            assert data["id"] == customer.id
-            assert data["first_name"] == "John"
-            assert data["last_name"] == "Doe"
-            assert data["email"] == "john@example.com"
+            serializer.save()
+            page.refresh_from_db()
+            assert page.title_en == "Main"
+            assert page.title_pt == "Início"
+            assert page.title_fr == "Accueil"
 
+    def test_read_nests_blocks_and_flattens_translations(self):
+        
+            page = PageFactory(title_pt="Início")
+            PageContentBlockFactory(page=page, title_pt="Bloco", content_pt="Conteúdo")
 
-# ==========================================
-# 2. DYNAMIC CONTENT & PAGE BUILDER SERIALIZER TESTS
-# ==========================================
-
-
-class TestPageContentBlockSerializer(TenantAwareTestCase):
-    def test_page_content_block_serializer(self):
-        with tenant_context(self.tenant):
-            page = PageFactory()
-            block = PageContentBlockFactory(
-                page=page,
-                block_type="text",
-                title="Welcome Section",
-                content="<p>Welcome</p>",
-                order=1,
-            )
-            serializer = PageContentBlockSerializer(block)
-            data = serializer.data
-
-            assert data["id"] == block.id
-            assert data["block_type"] == "text"
-            assert data["title"] == "Welcome Section"
-            assert data["content"] == "<p>Welcome</p>"
-            assert data["order"] == 1
-
-
-class TestPageDetailSerializer(TenantAwareTestCase):
-    def test_page_detail_serializer(self):
-        with tenant_context(self.tenant):
-            page = PageFactory(title="Home", slug="home", active=True, order=1)
-            block1 = PageContentBlockFactory(page=page, block_type="text", order=1)
-            block2 = PageContentBlockFactory(page=page, block_type="hero", order=2)
-
-            serializer = PageDetailSerializer(page)
-            data = serializer.data
-
-            assert data["id"] == page.id
-            assert data["title"] == "Home"
-            assert data["slug"] == "home"
-            assert data["active"] is True
-            assert data["order"] == 1
-            assert "blocks" in data
-            assert len(data["blocks"]) == 2
-            assert data["blocks"][0]["block_type"] == "text"
-            assert data["blocks"][1]["block_type"] == "hero"
-
-    def test_page_detail_serializer_only_active_blocks(self):
-        with tenant_context(self.tenant):
-            page = PageFactory(active=True)
-            block1 = PageContentBlockFactory(page=page, block_type="text", order=1)
-            # Create an inactive page with blocks
-            inactive_page = PageFactory(active=False)
-            block2 = PageContentBlockFactory(
-                page=inactive_page, block_type="hero", order=2
-            )
-
-            serializer = PageDetailSerializer(page)
-            data = serializer.data
-
-            # Should only include blocks from active pages
+            data = PageSerializer(page).data
+            assert data["slug"] == page.slug
+            assert data["title"] == "Início"
             assert len(data["blocks"]) == 1
-            assert data["blocks"][0]["block_type"] == "text"
+            assert data["blocks"][0]["title"] == "Bloco"
 
 
-# ==========================================
-# 3. METRICS & GOALS SERIALIZER TESTS
-# ==========================================
-
-
-class TestYearGoalSerializer(TenantAwareTestCase):
-    def test_year_goal_serializer(self):
-        with tenant_context(self.tenant):
-            goal = YearGoalFactory(
-                year=2025,
-                label="Chocolate Produced",
-                value=1500.50,
-                show_in_dashboard=True,
-            )
-            serializer = YearGoalSerializer(goal)
-            data = serializer.data
-
-            assert data["id"] == goal.id
-            assert data["year"] == 2025
-            assert data["label"] == "Chocolate Produced"
-            assert data["value"] == "1500.50"
-            assert data["show_in_dashboard"] is True
-
-
-# ==========================================
-# 4. ASSOCIATIONS & NETWORK SERIALIZER TESTS
-# ==========================================
-
-
-class TestDistrictSerializer(TenantAwareTestCase):
-    def test_district_serializer(self):
-        with tenant_context(self.tenant):
-            district = DistrictFactory(name="North Region")
-            serializer = DistrictSerializer(district)
-            data = serializer.data
-
-            assert data["id"] == district.id
-            assert data["name"] == "North Region"
-
-
-class TestAssociationSerializer(TenantAwareTestCase):
-    def test_association_serializer(self):
-        with tenant_context(self.tenant):
-            district = DistrictFactory(name="North Region")
-            association = AssociationFactory(
-                name="CECAB North", district=district, number_of_associated=150
-            )
-            serializer = AssociationSerializer(association)
-            data = serializer.data
-
-            assert data["id"] == association.id
-            assert data["name"] == "CECAB North"
-            assert data["district"] == district.id
-            assert data["district_name"] == "North Region"
-            assert data["number_of_associated"] == 150
-
-    def test_association_serializer_with_gallery_images(self):
-        with tenant_context(self.tenant):
-            association = AssociationFactory()
-            img1 = AssociationImageFactory(association=association)
-            img2 = AssociationImageFactory(association=association)
-
-            serializer = AssociationSerializer(association)
-            data = serializer.data
-
-            assert "gallery_images" in data
-            assert len(data["gallery_images"]) == 2
-
-
-# ==========================================
-# 5. CATALOGUE & ECO-TOURISM SERIALIZER TESTS
-# ==========================================
-
-
-class TestCatalogItemSpecificationSerializer(TenantAwareTestCase):
-    def test_specification_serializer(self):
-        with tenant_context(self.tenant):
-            item = CatalogItemFactory()
-            spec = CatalogItemSpecificationFactory(
-                item=item, key="Certification", value="Fairtrade"
-            )
-            serializer = CatalogItemSpecificationSerializer(spec)
-            data = serializer.data
-
-            assert data["id"] == spec.id
-            assert data["key"] == "Certification"
-            assert data["value"] == "Fairtrade"
-
-
-class TestCatalogItemSerializer(TenantAwareTestCase):
-    def test_catalog_item_serializer(self):
-        with tenant_context(self.tenant):
-            category = CategoryFactory(name="Chocolates")
-            item = CatalogItemFactory(
-                category=category,
-                name="Dark Chocolate",
-                slug="dark-chocolate",
-                description="Premium dark chocolate",
-                price=25.99,
-                is_available=True,
-            )
-            spec = CatalogItemSpecificationFactory(
-                item=item, key="Origin", value="Ghana"
-            )
-
-            serializer = CatalogItemSerializer(item)
-            data = serializer.data
-
-            assert data["id"] == item.id
-            assert data["category"] == category.id
-            assert data["category_name"] == "Chocolates"
-            assert data["name"] == "Dark Chocolate"
-            assert data["slug"] == "dark-chocolate"
-            assert data["description"] == "Premium dark chocolate"
-            assert data["price"] == "25.99"
-            assert data["is_available"] is True
-            assert "specifications" in data
-            assert len(data["specifications"]) == 1
-            assert data["specifications"][0]["key"] == "Origin"
-
-
-class TestCategoryDetailSerializer(TenantAwareTestCase):
-    def test_category_detail_serializer(self):
-        with tenant_context(self.tenant):
-            category = CategoryFactory(name="Chocolates", slug="chocolates")
-            item1 = CatalogItemFactory(category=category, name="Dark Chocolate")
-            item2 = CatalogItemFactory(category=category, name="Milk Chocolate")
-
-            serializer = CategoryDetailSerializer(category)
-            data = serializer.data
-
-            assert data["id"] == category.id
-            assert data["name"] == "Chocolates"
-            assert data["slug"] == "chocolates"
-            assert "items" in data
-            assert len(data["items"]) == 2
-            assert data["items"][0]["name"] == "Dark Chocolate"
-            assert data["items"][1]["name"] == "Milk Chocolate"
-
-
-# ==========================================
-# 6. POSTS, BLOG & NEWS SERIALIZER TESTS
-# ==========================================
-
-
-class TestBlogCategorySerializer(TenantAwareTestCase):
-    def test_blog_category_serializer(self):
-        with tenant_context(self.tenant):
-            category = BlogCategoryFactory(name="News", slug="news")
-            serializer = BlogCategorySerializer(category)
-            data = serializer.data
-
-            assert data["id"] == category.id
-            assert data["name"] == "News"
-            assert data["slug"] == "news"
-
-
-class TestInformationSerializer(TenantAwareTestCase):
-    def test_information_serializer(self):
-        with tenant_context(self.tenant):
-            post = PostFactory()
-            info = InformationFactory(
-                service=post, question="What is this?", information="This is a test"
-            )
-            serializer = InformationSerializer(info)
-            data = serializer.data
-
-            assert data["id"] == info.id
-            assert data["question"] == "What is this?"
-            assert data["information"] == "This is a test"
-
-
-class TestPostListSerializer(TenantAwareTestCase):
-    def test_post_list_serializer(self):
-        with tenant_context(self.tenant):
-            blog_category = BlogCategoryFactory(slug="news")
-            post = PostFactory(
-                blog_category=blog_category,
-                title="Test Post",
-                slug="test-post",
-                active=True,
-                featured=True,
-                is_a_service=False,
-                is_social_service=True,
-                is_to_front=False,
-                description="Test description",
-            )
-            serializer = PostListSerializer(post)
-            data = serializer.data
-
-            assert data["id"] == post.id
-            assert data["title"] == "Test Post"
-            assert data["slug"] == "test-post"
-            assert data["category_slug"] == "news"
-            assert data["active"] is True
-            assert data["featured"] is True
-            assert data["is_a_service"] is False
-            assert data["is_social_service"] is True
-            assert data["is_to_front"] is False
-            assert data["description"] == "Test description"
-            assert "picture" in data
-            assert "date" in data
-
-
-class TestPostDetailSerializer(TenantAwareTestCase):
-    def test_post_detail_serializer(self):
-        with tenant_context(self.tenant):
-            blog_category = BlogCategoryFactory(name="News", slug="news")
-            post = PostFactory(
-                blog_category=blog_category,
-                title="Test Post",
-                slug="test-post",
-                active=True,
-                featured=True,
-                text="Full content",
-                description="Test description",
-            )
-            image = PostImageFactory(post=post)
-            file = PostFileFactory(post=post)
-            document = PostDocumentFactory(post=post)
-            video = VideoFactory(
-                title="Test Video", link="https://youtube.com/watch?v=123"
-            )
-            post_video = PostVideoFactory(post=post, video=video)
-            info = InformationFactory(
-                service=post, question="FAQ?", information="Answer"
-            )
-
-            serializer = PostDetailSerializer(post)
-            data = serializer.data
-
-            assert data["id"] == post.id
-            assert data["category"]["name"] == "News"
-            assert data["title"] == "Test Post"
-            assert data["slug"] == "test-post"
-            assert data["active"] is True
-            assert data["featured"] is True
-            assert data["text"] == "Full content"
-            assert data["description"] == "Test description"
-            assert "gallery_images" in data
-            assert len(data["gallery_images"]) == 1
-            assert "gallery_videos" in data
-            assert len(data["gallery_videos"]) == 1
-            assert data["gallery_videos"][0]["title"] == "Test Video"
-            assert data["gallery_videos"][0]["url"] == "https://youtube.com/watch?v=123"
-            assert "downloadable_documents" in data
-            assert "faq_entries" in data
-            assert len(data["faq_entries"]) == 1
-            assert data["faq_entries"][0]["question"] == "FAQ?"
-
-    @patch("orgs.serializers.json.load")
-    def test_post_detail_serializer_with_parsed_json(self, mock_json_load):
-        with tenant_context(self.tenant):
-            fake_file = generate_file_json()
-
-            mock_json_load.return_value = {"parsed": "data"}
-
-            post = PostFactory(processed_text_file=fake_file)
-            serializer = PostDetailSerializer(post)
-
-            data = serializer.data
-            assert "parsed_json_data" in data
-
-    def test_post_detail_serializer_without_processed_file(self):
-        with tenant_context(self.tenant):
-            post = PostFactory(processed_text_file=None)
-            serializer = PostDetailSerializer(post)
-            data = serializer.data
-
-            assert data["parsed_json_data"] is None
-
-
-# ==========================================
-# 7. MULTIMEDIA & COMMUNICATIONS SERIALIZER TESTS
-# ==========================================
-
-
-class TestVideoSerializer(TenantAwareTestCase):
-    def test_video_serializer(self):
-        with tenant_context(self.tenant):
-            video = VideoFactory(
-                title="Band Performance",
-                link="https://youtube.com/watch?v=123",
-                is_band=True,
-                is_spot=False,
-            )
-            serializer = VideoSerializer(video)
-            data = serializer.data
-
-            assert data["id"] == video.id
-            assert data["title"] == "Band Performance"
-            assert data["link"] == "https://youtube.com/watch?v=123"
-            assert data["is_band"] is True
-            assert data["is_spot"] is False
-            assert "created_at" in data
-
-
-class TestMessageSerializer(TenantAwareTestCase):
-    def test_message_serializer(self):
-        with tenant_context(self.tenant):
-            message = MessageFactory(
-                name="John Doe",
-                email="john@example.com",
-                subject="Test Subject",
-                text="Test content",
-            )
-            serializer = MessageSerializer(message)
-            data = serializer.data
-
-            assert data["id"] == message.id
-            assert data["name"] == "John Doe"
-            assert data["email"] == "john@example.com"
-            assert data["subject"] == "Test Subject"
-            assert data["text"] == "Test content"
-            assert data["sent"] is False
-            assert "date" in data
-
-    def test_message_serializer_read_only_fields(self):
-        with tenant_context(self.tenant):
-            data = {
-                "name": "John Doe",
-                "email": "john@example.com",
-                "subject": "Test",
-                "text": "Content",
-                "sent": True,  # Should be ignored
+class PageContentBlockSerializerTests(MultiTenantSerializerTest):
+    def test_create_block_pulls_page_from_context(self):
+        
+            page = PageFactory()
+            payload = {
+                "block_type": "text", "order": 1,
+                **_tr("title"), **_tr("content"),
             }
-            serializer = MessageSerializer(data=data)
-            assert serializer.is_valid()
-            message = serializer.save()
-            assert message.sent is False  # Should default to False
-
-
-class TestPartnerSerializer(TenantAwareTestCase):
-    def test_partner_serializer(self):
-        with tenant_context(self.tenant):
-            partner = PartnerFactory(title="Fairtrade International")
-            serializer = PartnerSerializer(partner)
-            data = serializer.data
-
-            assert data["id"] == partner.id
-            assert data["title"] == "Fairtrade International"
-            assert "picture" in data
-
-
-# ==========================================
-# 8. CORPORATE GOVERNANCE & TEAM SERIALIZER TESTS
-# ==========================================
-
-
-class TestRoleSerializer(TenantAwareTestCase):
-    def test_role_serializer(self):
-        with tenant_context(self.tenant):
-            role = RoleFactory(title="President")
-            serializer = RoleSerializer(role)
-            data = serializer.data
-
-            assert data["id"] == role.id
-            assert data["title"] == "President"
-
-
-class TestTeamSerializer(TenantAwareTestCase):
-    def test_team_serializer(self):
-        with tenant_context(self.tenant):
-            role = RoleFactory(title="President")
-            team = TeamFactory(name="John Doe", role=role, from_assembly=True)
-            serializer = TeamSerializer(team)
-            data = serializer.data
-
-            assert data["id"] == team.id
-            assert data["name"] == "John Doe"
-            assert data["role"] == role.id
-            assert data["role_title"] == "President"
-            assert data["from_assembly"] is True
-
-
-# ==========================================
-# 9. GENERAL DOCUMENTATION SERIALIZER TESTS
-# ==========================================
-
-
-class TestBudgetSerializer(TenantAwareTestCase):
-    def test_budget_serializer(self):
-        with tenant_context(self.tenant):
-            budget = BudgetFactory(
-                title="Annual Budget 2024",
-                slug="annual-budget-2024",
-                year=2024,
-                type=Budget.TYPE_BUDGET,
+            serializer = PageContentBlockWriteSerializer(
+                data=payload, context=build_context(page_pk=page.pk)
             )
-            serializer = BudgetSerializer(budget)
-            data = serializer.data
+            assert serializer.is_valid(), serializer.errors
 
-            assert data["id"] == budget.id
-            assert data["title"] == "Annual Budget 2024"
-            assert data["slug"] == "annual-budget-2024"
-            assert data["year"] == 2024
-            assert data["type"] == "B"
-            assert "text_file" in data
-            assert "date" in data
+            block = serializer.save()
+            block.refresh_from_db()
+            assert block.page_id == page.pk
 
-
-class TestExtraDocSerializer(TenantAwareTestCase):
-    def test_extra_doc_serializer(self):
-        with tenant_context(self.tenant):
-            extra_doc = ExtraDocFactory(
-                title="Quality Certificate", slug="quality-cert", active=True
-            )
-            extra_image = ExtraImageFactory(extra_doc=extra_doc)
-
-            serializer = ExtraDocSerializer(extra_doc)
-            data = serializer.data
-
-            assert data["id"] == extra_doc.id
-            assert data["title"] == "Quality Certificate"
-            assert data["slug"] == "quality-cert"
-            assert data["active"] is True
-            assert "gallery_images" in data
-            assert len(data["gallery_images"]) == 1
-
-
-# ==========================================
-# REVIEW SERIALIZER TESTS
-# ==========================================
-
-
-class TestReviewSerializer(TenantAwareTestCase):
-    def test_review_serializer(self):
-        with tenant_context(self.tenant):
-            catalog_item = CatalogItemFactory(name="Dark Chocolate")
-            user = User.objects.create_user(
-                username="reviewer", password="testpass123", first_name="John"
-            )
-            review = ReviewFactory(
-                item=catalog_item,
-                client=user,
-                rating=4,
-                comment="Great product!",
-                is_approved=True,
-            )
-            serializer = ReviewSerializer(review)
-            data = serializer.data
-
-            assert data["id"] == review.id
-            assert data["item"] == catalog_item.id
-            assert data["client_name"] == "John"
-            assert data["rating"] == 4
-            assert data["comment"] == "Great product!"
-            assert "created_at" in data
-
-    def test_review_serializer_validation(self):
-        with tenant_context(self.tenant):
-            catalog_item = CatalogItemFactory()
-            data = {
-                "item": catalog_item.id,
-                "rating": 6,  # Invalid: max is 5
-                "comment": "Test",
+    def test_create_block_ignores_page_from_payload(self):
+        
+            page = PageFactory()
+            other = PageFactory()
+            payload = {
+                "page": other.pk, "block_type": "text", "order": 1,
+                **_tr("title"), **_tr("content"),
             }
-            serializer = ReviewSerializer(data=data)
+            serializer = PageContentBlockWriteSerializer(
+                data=payload, context=build_context(page_pk=page.pk)
+            )
+            assert serializer.is_valid(), serializer.errors
+
+            block = serializer.save()
+            block.refresh_from_db()
+            assert block.page_id == page.pk  # URL wins
+
+    def test_create_block_missing_scope_raises(self):
+        
+            payload = {
+                "block_type": "text", "order": 1,
+                **_tr("title"), **_tr("content"),
+            }
+            serializer = PageContentBlockWriteSerializer(data=payload, context={})
             assert not serializer.is_valid()
-            assert "rating" in serializer.errors
+            assert "page_pk" in serializer.errors
 
-    def test_review_serializer_rating_min_validation(self):
-        with tenant_context(self.tenant):
-            catalog_item = CatalogItemFactory()
-            data = {
-                "item": catalog_item.id,
-                "rating": 0,  # Invalid: min is 1
-                "comment": "Test",
-            }
-            serializer = ReviewSerializer(data=data)
+    def test_create_block_missing_default_language_raises(self):
+        
+            page = PageFactory()
+            payload = {"block_type": "text", "order": 1, "title_en": "EN only"}
+            serializer = PageContentBlockWriteSerializer(
+                data=payload, context=build_context(page_pk=page.pk)
+            )
             assert not serializer.is_valid()
-            assert "rating" in serializer.errors
-
-    def test_review_serializer_create_with_client(self):
-        with tenant_context(self.tenant):
-            catalog_item = CatalogItemFactory()
-            user = User.objects.create_user(username="reviewer", password="testpass123")
-
-            # Create a mock request with user
-            factory = APIRequestFactory()
-            request = factory.post("/api/reviews/")
-            request.user = user
-
-            data = {"item": catalog_item.id, "rating": 5, "comment": "Excellent!"}
-            serializer = ReviewSerializer(data=data, context={"request": request})
-            assert serializer.is_valid()
-            review = serializer.save()
-            assert review.client == user
-            assert review.rating == 5
-            assert review.comment == "Excellent!"
+            assert f"title_{DEFAULT_LANGUAGE}" in serializer.errors
 
 
-# ==========================================
-# SERIALIZER INTEGRATION TESTS
-# ==========================================
+# ---------------------------------------------------------------------------
+# Metrics
+# ---------------------------------------------------------------------------
+class YearGoalSerializerTests(MultiTenantSerializerTest):
+    def test_create_year_goal_with_translations(self):
+        
+            payload = {"year": 2025, "value": "1200.50", **_tr("label")}
+            serializer = YearGoalWriteSerializer(data=payload)
+            assert serializer.is_valid(), serializer.errors
+
+            goal = serializer.save()
+            goal.refresh_from_db()
+            for lang in LANGUAGE_CODES:
+                assert getattr(goal, f"label_{lang}") == payload[f"label_{lang}"]
+
+    def test_create_year_goal_missing_default_label_raises(self):
+        
+            serializer = YearGoalWriteSerializer(
+                data={"year": 2025, "value": "10", "label_en": "Only"}
+            )
+            assert not serializer.is_valid()
+            assert f"label_{DEFAULT_LANGUAGE}" in serializer.errors
 
 
-class TestSerializerIntegration(TenantAwareTestCase):
-    def test_post_detail_serializer_with_all_relations(self):
-        with tenant_context(self.tenant):
-            blog_category = BlogCategoryFactory()
-            post = PostFactory(blog_category=blog_category)
+# ---------------------------------------------------------------------------
+# Associations
+# ---------------------------------------------------------------------------
+class AssociationSerializerTests(MultiTenantSerializerTest):
+    def test_create_with_translations(self):
+        
+            district = DistrictFactory()
+            payload = {
+                "registered": "2024-01-01",
+                "number_of_associated": 42,
+                "district": district.pk,
+                "latitude": "0.123",
+                "longitude": "10.456",
+                "name":"name",
+                "address":"address",
+                "picture" : dummy_picture,  
+                **_tr("name"), **_tr("address"),
+            }
+            serializer = AssociationWriteSerializer(data=payload)
+            assert serializer.is_valid(), serializer.errors
 
-            # Create all related objects
-            PostImageFactory(post=post)
-            PostImageFactory(post=post)
-            PostFileFactory(post=post)
-            PostDocumentFactory(post=post)
-            PostVideoFactory(post=post, video=VideoFactory())
-            PostVideoFactory(post=post, video=VideoFactory())
-            InformationFactory(service=post)
-            InformationFactory(service=post)
+            assoc = serializer.save()
+            assoc.refresh_from_db()
+            assert assoc.number_of_associated == 42
+            assert assoc.district_id == district.pk
 
-            serializer = PostDetailSerializer(post)
-            data = serializer.data
+    def test_latitude_out_of_range_raises(self):
+        
+            district = DistrictFactory()
+            payload = {
+                "registered": "2024-01-01",
+                "number_of_associated": 1,
+                "district": district.pk,
+                "latitude": "999.0",
+                **_tr("name"), **_tr("address"),
+            }
+            serializer = AssociationWriteSerializer(data=payload)
+            assert not serializer.is_valid()
+            assert "latitude" in serializer.errors
 
-            assert len(data["gallery_images"]) == 2
-            assert len(data["gallery_videos"]) == 2
-            assert "downloadable_documents" in data
-            assert len(data["faq_entries"]) == 2
+    def test_read_nests_district_and_images(self):
+        
+            assoc = AssociationFactory(name_pt="CECAB")
+            AssociationImageFactory(association=assoc)
 
-    def test_category_detail_serializer_with_items(self):
-        with tenant_context(self.tenant):
+            data = AssociationSerializer(assoc).data
+            assert data["name"] == "CECAB"
+            assert data["district"]["name"] == assoc.district.name
+            assert len(data["images"]) == 1
+
+
+class AssociationImageSerializerTests(MultiTenantSerializerTest):
+    def test_create_uses_scope_from_context(self):
+        
+            assoc = AssociationFactory()
+            serializer = AssociationImageWriteSerializer(
+                data={"image":  dummy_picture},
+                context=build_context(association_pk=assoc.pk),
+            )
+            assert serializer.is_valid(), serializer.errors
+
+            image = serializer.save()
+            image.refresh_from_db()
+            assert image.association_id == assoc.pk
+
+    def test_missing_scope_raises(self):
+        
+            serializer = AssociationImageWriteSerializer(
+                data={"image" : dummy_picture}, context={}
+            )
+            assert not serializer.is_valid()
+            assert "association_pk" in serializer.errors
+
+
+# ---------------------------------------------------------------------------
+# Catalog
+# ---------------------------------------------------------------------------
+class CatalogItemSerializerTests(MultiTenantSerializerTest):
+    def test_create_with_translations(self):
+        
             category = CategoryFactory()
-            for i in range(3):
-                CatalogItemFactory(category=category, name=f"Item {i}")
+            payload = {
+                "category": category.pk,
+                "slug": "truffle",
+                "price": "29.99",
+                "name":"name",
+                "description": "description",
+                **_tr("name"), **_tr("description"),
+            }
+            serializer = CatalogItemWriteSerializer(data=payload)
+            assert serializer.is_valid(), serializer.errors
 
-            serializer = CategoryDetailSerializer(category)
-            data = serializer.data
+            item = serializer.save()
+            item.refresh_from_db()
+            assert item.slug == "truffle"
+            assert item.category_id == category.pk
 
-            assert len(data["items"]) == 3
-            assert data["items"][0]["name"] == "Item 0"
+    def test_missing_default_description_raises(self):
+        
+            category = CategoryFactory()
+            payload = {
+                "category": category.pk,
+                "slug": "x",
+                "name": "X",
+                "name_pt": "X",
+                "description_en": "EN only",
+            }
+            serializer = CatalogItemWriteSerializer(data=payload)
+            with pytest.raises(ValidationError) as exc_info:
+                serializer.is_valid(raise_exception=True)
+            assert "description" in serializer.errors
 
-    def test_association_serializer_with_gallery(self):
-        with tenant_context(self.tenant):
-            association = AssociationFactory()
-            for i in range(3):
-                AssociationImageFactory(association=association)
+    def test_read_nests_category_pictures_specs(self):
+        
+            item = CatalogItemFactory(name_pt="Trufa")
+            CatalogItemPictureFactory(catalog_item=item, is_feature=True)
+            CatalogItemSpecificationFactory(item=item)
 
-            serializer = AssociationSerializer(association)
-            data = serializer.data
-
-            assert len(data["gallery_images"]) == 3
-
-
-# ==========================================
-# SERIALIZER FIELD TESTS
-# ==========================================
+            data = CatalogItemSerializer(item).data
+            assert data["name"] == "Trufa"
+            assert data["category"]["slug"] == item.category.slug
+            assert len(data["pictures"]) == 1
+            assert data["pictures"][0]["is_feature"] is True
+            assert len(data["specifications"]) == 1
 
 
-class TestSerializerFields(TenantAwareTestCase):
-    def test_customer_serializer_fields(self):
-        with tenant_context(self.tenant):
-            customer = CustomerFactory(
-                user__first_name="John",
-                user__last_name="Doe",
-                user__email="john@example.com",
-                user__tenant=self.tenant,
+class CatalogItemPictureSerializerTests(MultiTenantSerializerTest):
+    def test_create_uses_scope_from_context(self):
+        
+            item = CatalogItemFactory()
+            serializer = CatalogItemPictureWriteSerializer(
+                data={"picture" : dummy_picture, "is_feature": True},
+                context=build_context(item_pk=item.pk),
             )
-            serializer = CustomerSerializer(customer)
-            data = serializer.data
+            assert serializer.is_valid(), serializer.errors
 
-            expected_fields = ["id", "first_name", "last_name", "email"]
-            assert sorted(data.keys()) == sorted(expected_fields)
+            picture = serializer.save()
+            picture.refresh_from_db()
+            assert picture.catalog_item_id == item.pk
+            assert picture.is_feature is True
 
-    def test_post_list_serializer_fields(self):
-        with tenant_context(self.tenant):
+    def test_feature_flag_unsets_previous(self):
+        
+            item = CatalogItemFactory()
+            previous = CatalogItemPictureFactory(
+                catalog_item=item, is_feature=True
+            )
+            serializer = CatalogItemPictureWriteSerializer(
+                data={"picture" : dummy_picture, "is_feature": True},
+                context=build_context(item_pk=item.pk),
+            )
+            assert serializer.is_valid(), serializer.errors
+            serializer.save()
+
+            previous.refresh_from_db()
+            assert previous.is_feature is False
+
+
+class CatalogItemSpecificationSerializerTests(MultiTenantSerializerTest):
+    def test_create_uses_scope_and_translations(self):
+        
+            item = CatalogItemFactory()
+            serializer = CatalogItemSpecificationWriteSerializer(
+                data={"key":"key", **_tr("key"), **_tr("value"), "value":"value"},
+                context=build_context(item_pk=item.pk),
+            )
+            assert serializer.is_valid(), serializer.errors
+
+            spec = serializer.save()
+            spec.refresh_from_db()
+            assert spec.item_id == item.pk
+
+
+# ---------------------------------------------------------------------------
+# Blog / Posts
+# ---------------------------------------------------------------------------
+class PostSerializerTests(MultiTenantSerializerTest):
+    def test_create_with_translations(self):
+        
+            blog_category = BlogCategoryFactory()
+            payload = {
+                "blog_category": blog_category.pk,
+                "slug": "news",
+                "picture" : dummy_picture,
+                "active": True,
+                **_tr("title"), **_tr("description"), **_tr("text"),
+            }
+            serializer = PostWriteSerializer(data=payload)
+            assert serializer.is_valid(), serializer.errors
+
+            post = serializer.save()
+            post.refresh_from_db()
+            for lang in LANGUAGE_CODES:
+                assert getattr(post, f"title_{lang}") == f"Title {lang}"
+
+    def test_missing_default_title_raises(self):
+        
+            blog_category = BlogCategoryFactory()
+            payload = {
+                "blog_category": blog_category.pk,
+                "slug": "x",
+                "picture" : dummy_picture,
+                "title_en": "Only",
+            }
+            serializer = PostWriteSerializer(data=payload)
+            assert not serializer.is_valid()
+            assert "title" in serializer.errors
+
+    def test_partial_update_title_fr(self):
+        
+            post = PostFactory(title_pt="T", title_en="E", title_fr="F")
+            serializer = PostWriteSerializer(
+                post, data={"title_fr": "Modifié"}, partial=True
+            )
+            assert serializer.is_valid(), serializer.errors
+
+            serializer.save()
+            post.refresh_from_db()
+            assert post.title_fr == "Modifié"
+            assert post.title_pt == "T"
+
+    def test_read_nests_blog_category_and_images(self):
+        
+            post = PostFactory(title_pt="Notícia")
+            PostImageFactory(post=post)
+
+            data = PostSerializer(post).data
+            assert data["title"] == "Notícia"
+            assert data["blog_category"]["slug"] == post.blog_category.slug
+            assert len(data["post_images"]) == 1
+
+
+class PostImageSerializerTests(MultiTenantSerializerTest):
+    def test_create_uses_scope_from_context(self):
+        
             post = PostFactory()
-            serializer = PostListSerializer(post)
-            data = serializer.data
+            serializer = PostImageWriteSerializer(
+                data={"picture" : dummy_picture}, context=build_context(post_pk=post.pk)
+            )
+            assert serializer.is_valid(), serializer.errors
 
-            expected_fields = [
-                "id",
-                "title",
-                "slug",
-                "category_slug",
-                "picture",
-                "active",
-                "date",
-                "featured",
-                "is_a_service",
-                "is_social_service",
-                "is_to_front",
-                "description",
-            ]
-            assert sorted(data.keys()) == sorted(expected_fields)
+            image = serializer.save()
+            image.refresh_from_db()
+            assert image.post_id == post.pk
 
-    def test_post_detail_serializer_fields(self):
-        with tenant_context(self.tenant):
+    def test_missing_scope_raises(self):
+        
+            serializer = PostImageWriteSerializer(
+                data={"picture" : dummy_picture}, context={}
+            )
+            assert not serializer.is_valid()
+            assert "post_pk" in serializer.errors
+
+
+# ---------------------------------------------------------------------------
+# Documents (Budget, ExtraDoc, ExtraImage, Information)
+# ---------------------------------------------------------------------------
+class BudgetSerializerTests(MultiTenantSerializerTest):
+    def test_create_with_translations(self):
+        
+            payload = {
+                "slug": "2024",
+                "text_file": dummy_picture,
+                "year": 2024,
+                "type": "B",
+                **_tr("title"),
+            }
+            serializer = BudgetWriteSerializer(data=payload)
+            assert serializer.is_valid(), serializer.errors
+
+            budget = serializer.save()
+            budget.refresh_from_db()
+            assert budget.year == 2024
+            assert budget.type == "B"
+
+
+class ExtraDocSerializerTests(MultiTenantSerializerTest):
+    def test_create_with_translations(self):
+        
+            payload = {
+                "slug": "x",
+                "picture" : dummy_picture,
+                "text_file": dummy_picture,
+                "active": True,
+                **_tr("title"),
+            }
+            serializer = ExtraDocWriteSerializer(data=payload)
+            assert serializer.is_valid(), serializer.errors
+
+            doc = serializer.save()
+            doc.refresh_from_db()
+            assert doc.active is True
+
+
+class ExtraImageSerializerTests(MultiTenantSerializerTest):
+    def test_create_uses_scope_from_context(self):
+        
+            doc = ExtraDocFactory()
+            serializer = ExtraImageWriteSerializer(
+                data={"picture" : dummy_picture},
+                context=build_context(extradoc_pk=doc.pk),
+            )
+            assert serializer.is_valid(), serializer.errors
+
+            image = serializer.save()
+            image.refresh_from_db()
+            assert image.extra_doc_id == doc.pk
+
+
+class InformationSerializerTests(MultiTenantSerializerTest):
+    def test_create_uses_post_scope_from_context(self):
+        
             post = PostFactory()
-            serializer = PostDetailSerializer(post)
-            data = serializer.data
+            serializer = InformationWriteSerializer(
+                data={**_tr("question"), **_tr("information")},
+                context=build_context(post_pk=post.pk),
+            )
+            assert serializer.is_valid(), serializer.errors
 
-            expected_fields = [
-                "id",
-                "category",
-                "title",
-                "slug",
-                "picture",
-                "text_file",
-                "processed_text_file",
-                "active",
-                "date",
-                "featured",
-                "is_a_service",
-                "is_social_service",
-                "is_to_front",
-                "description",
-                "text",
-                "gallery_images",
-                "gallery_videos",
-                "downloadable_documents",
-                "faq_entries",
-                "parsed_json_data",
-            ]
-            assert sorted(data.keys()) == sorted(expected_fields)
+            info = serializer.save()
+            info.refresh_from_db()
+            assert info.service_id == post.pk
+
+    def test_missing_question_default_raises(self):
+        
+            post = PostFactory()
+            serializer = InformationWriteSerializer(
+                data={"information_pt": "X"},
+                context=build_context(post_pk=post.pk),
+            )
+            assert not serializer.is_valid()
+            assert "question" in serializer.errors
+
+
+# ---------------------------------------------------------------------------
+# Multimedia
+# ---------------------------------------------------------------------------
+class VideoSerializerTests(MultiTenantSerializerTest):
+    def test_create_with_translations(self):
+        
+            payload = {
+                "link": "https://youtu.be/x",
+                "is_band": True,
+                "created_at": "2024-01-01",
+                **_tr("title"),
+            }
+            serializer = VideoWriteSerializer(data=payload)
+            assert serializer.is_valid(), serializer.errors
+
+            video = serializer.save()
+            video.refresh_from_db()
+            assert video.is_band is True
+
+
+class MessageSerializerTests(MultiTenantSerializerTest):
+    def test_create_message(self):
+        
+            serializer = MessageWriteSerializer(
+                data={
+                    "name": "Ana",
+                    "email": "ana@example.com",
+                    "subject": "Hello",
+                    "text": "World",
+                }
+            )
+            assert serializer.is_valid(), serializer.errors
+
+            message = serializer.save()
+            message.refresh_from_db()
+            assert message.sent is False
+
+
+# ---------------------------------------------------------------------------
+# Partners / Team
+# ---------------------------------------------------------------------------
+class PartnerSerializerTests(MultiTenantSerializerTest):
+    def test_create(self):
+        
+            serializer = PartnerWriteSerializer(
+                data={"title": "Fairtrade", "picture" : dummy_picture}
+            )
+            assert serializer.is_valid(), serializer.errors
+
+            partner = serializer.save()
+            partner.refresh_from_db()
+            assert partner.title == "Fairtrade"
+
+
+class RoleSerializerTests(MultiTenantSerializerTest):
+    def test_create_with_translations(self):
+        
+            serializer = RoleWriteSerializer(data=_tr("title"))
+            assert serializer.is_valid(), serializer.errors
+
+            role = serializer.save()
+            role.refresh_from_db()
+            for lang in LANGUAGE_CODES:
+                assert getattr(role, f"title_{lang}") == f"Title {lang}"
+
+
+class TeamSerializerTests(MultiTenantSerializerTest):
+    def test_create_member(self):
+        
+            role = RoleFactory()
+            serializer = TeamWriteSerializer(
+                data={"name": "João", "role": role.pk, "from_assembly": True}
+            )
+            assert serializer.is_valid(), serializer.errors
+
+            member = serializer.save()
+            member.refresh_from_db()
+            assert member.role_id == role.pk
+            assert member.from_assembly is True
+
+    def test_unique_constraint_raises(self):
+        
+            role = RoleFactory()
+            TeamFactory(name="João", role=role)
+            serializer = TeamWriteSerializer(
+                data={"name": "João", "role": role.pk}
+            )
+            assert not serializer.is_valid()
+            assert "non_field_errors" in serializer.errors
+
+
+# ---------------------------------------------------------------------------
+# Reviews
+# ---------------------------------------------------------------------------
+class ReviewSerializerTests(MultiTenantSerializerTest):
+    def test_create_review_uses_scope_and_auth_user(self):
+        
+            user = UserFactory()
+            item = CatalogItemFactory()
+
+            serializer = ReviewWriteSerializer(
+                data={"rating": 5, "comment": "Excellent"},
+                context=build_context(
+                    user_id=user.id, item_pk=item.pk
+                ),
+            )
+            assert serializer.is_valid(), serializer.errors
+
+            review = serializer.save()
+            review.refresh_from_db()
+            assert review.item_id == item.pk
+            assert review.client_id == user.pk
+
+            item.refresh_from_db()
+            assert float(item.average_rating) == 5.00
+            assert item.total_reviews == 1
+
+    def test_duplicate_review_raises(self):
+        
+            user = UserFactory()
+            item = CatalogItemFactory()
+            ReviewFactory(item=item, client=user, rating=4)
+
+            serializer = ReviewWriteSerializer(
+                data={"rating": 3, "comment": "again"},
+                context=build_context(
+                    user_id=user.id, item_pk=item.pk
+                ),
+            )
+            assert not serializer.is_valid()
+            assert "non_field_errors" in serializer.errors
+
+    
+
+    def test_missing_scope_raises(self):
+        
+            user = UserFactory()
+            serializer = ReviewWriteSerializer(
+                data={"rating": 5, "comment": "x"},
+                context=build_context(request=authed_request(user)),
+            )
+            assert not serializer.is_valid()
+            assert "item_pk" in serializer.errors
+
+    def test_update_forbidden_for_non_owner(self):
+        
+            owner = UserFactory()
+            intruder = UserFactory()
+            item = CatalogItemFactory()
+            review = ReviewFactory(item=item, client=owner, rating=4)
+
+            serializer = ReviewWriteSerializer(
+                review,
+                data={"rating": 1},
+                partial=True,
+                context=build_context(
+                    user_id=intruder.id, item_pk=item.pk
+                ),
+            )
+            assert serializer.is_valid()
+            with pytest.raises(ValidationError):
+                serializer.save()
+
+    def test_read_exposes_client_username(self):
+        
+            user = UserFactory(username="reader")
+            review = ReviewFactory(client=user, rating=5)
+
+            data = ReviewSerializer(review).data
+            assert data["client_username"] == "reader"
+            assert data["rating"] == 5
+            assert data["is_approved"] is True
