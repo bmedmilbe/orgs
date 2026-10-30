@@ -95,17 +95,6 @@ WSGI_APPLICATION = "app.wsgi.application"
 # DATABASE CONFIGURATION
 # ==============================================================================
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django_tenants.postgresql_backend",
-        "USER": "postgres",
-        "HOST": "orgs-db",
-        "PASSWORD": "postgres",
-        "NAME": "orgsdb",
-        "PORT": "5432",
-    }
-}
-
 DATABASE_ROUTERS = ("django_tenants.routers.TenantSyncRouter",)
 
 
