@@ -96,3 +96,8 @@ dev.py
 
 app/app/settings/dev.py
 docker-compose.yml
+
+nginx/default.dev.conf
+nginx/Dockerfile.dev
+
+app/Dockerfile
