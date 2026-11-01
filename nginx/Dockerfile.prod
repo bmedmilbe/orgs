@@ -7,13 +7,11 @@ ENV DJANGO_SETTINGS_MODULE=app.settings.prod
 
 WORKDIR /build
 
-# 1. Install build tools required to compile psycopg2-binary
 RUN apt-get update && apt-get install -y \
     libpq-dev gcc python3-dev libjpeg-dev zlib1g-dev \
     libcairo2-dev pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Upgrade pip to ensure the best compatibility with pre-built wheels
 RUN pip install --no-cache-dir --upgrade pip pipenv
 
 COPY ./app /build/
@@ -25,12 +23,12 @@ RUN python manage.py collectstatic --noinput
 # === Stage 2: Inject compiled assets straight into Nginx ===
 FROM nginx:1.25-alpine
 
-RUN rm /etc/nginx/conf.d/default.conf
-COPY ./nginx/defaultpro.conf /etc/nginx/conf.d/default.conf
+RUN rm -f /etc/nginx/conf.d/default.conf
 
-# 🟩 Grab the compiled folder from Stage 1 and plant it inside the container path
+COPY ./nginx/defaultpro.conf /etc/nginx/templates/default.conf.template
+
 COPY --from=asset-compiler /build/app/staticfiles/ /home/app/staticfiles/
 
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 8080
 
+CMD ["nginx", "-g", "daemon off;"]
