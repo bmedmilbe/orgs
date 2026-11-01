@@ -4,8 +4,8 @@ import dj_database_url
 
 from .common import *
 
-PUBLIC_DOMAIN = "teladoshi.com"
-BRIDGE_DOMAIN = "bridge.teladoshi.com"
+PUBLIC_DOMAIN = os.environ.get("PUBLIC_DOMAIN", "teladoshi.com")
+BRIDGE_DOMAIN = os.environ.get("BRIDGE_DOMAIN", "bridge.teladoshi.com")
 
 DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")
 
