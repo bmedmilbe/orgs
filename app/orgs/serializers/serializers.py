@@ -649,7 +649,7 @@ class CatalogItemPictureSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = CatalogItemPicture
-        fields = ['id', 'caption', 'is_feature']
+        fields = ['id', 'caption',"picture", 'is_feature']
 
 class CatalogItemSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)  
