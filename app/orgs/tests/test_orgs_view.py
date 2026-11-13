@@ -985,15 +985,16 @@ class TestReviewViewSet(TenantAwareTestCase):
             user = UserFactory(tenant=self.tenant)
             user1 = UserFactory(username="reviewer1", tenant=self.tenant)
             user2 = UserFactory(username="reviewer2", tenant=self.tenant)
-
-            review1 = ReviewFactory(client=user1, is_approved=True)
-            review2 = ReviewFactory(client=user2, is_approved=True)
+            catalog_item = CatalogItemFactory()
+            review1 = ReviewFactory(client=user1, item=catalog_item, is_approved=True)
+            review2 = ReviewFactory(client=user2,item=catalog_item, is_approved=True)
             review3 = ReviewFactory(
+                item=catalog_item,
                 client=UserFactory(tenant=self.tenant), is_approved=False
             )
 
             view = ReviewViewSet.as_view({"get": "list"})
-            request = get_authenticated_request("get", "/api/reviews/", user)
+            request = get_authenticated_request("get", f"/api/catalog-items/{catalog_item.slug}/reviews/", user)
             response = view(request)
 
             assert response.status_code == status.HTTP_200_OK
@@ -1016,9 +1017,9 @@ class TestReviewViewSet(TenantAwareTestCase):
 
             view = ReviewViewSet.as_view({"get": "list"})
             request = get_authenticated_request(
-                "get", f"/api/catalog-items/{item1.id}/reviews/", user
+                "get", f"/api/catalog-items/{item1.slug}/reviews/", user
             )
-            response = view(request, item_pk=item1.id)
+            response = view(request, item_slug=item1.slug)
 
             assert response.status_code == status.HTTP_200_OK
             assert len(response.data) == 2
@@ -1058,7 +1059,7 @@ class TestReviewViewSet(TenantAwareTestCase):
 
             view = ReviewViewSet.as_view({"get": "retrieve"})
             request = get_authenticated_request(
-                "get", f"/api/reviews/{review.id}/", user
+                "get", f"/api/catalog-items/{catalog_item.slug}/reviews/{review.id}/", user
             )
             response = view(request, pk=review.id)
 
@@ -1073,7 +1074,7 @@ class TestReviewViewSet(TenantAwareTestCase):
 
             view = ReviewViewSet.as_view({"post": "create"})
             factory = APIRequestFactory()
-            request = factory.post("/api/reviews/", data=data, format="json")
+            request = factory.post(f"/api/catalog-items/{catalog_item.slug}/reviews/", data=data, format="json")
             response = view(request)
 
             assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -1087,7 +1088,7 @@ class TestReviewViewSet(TenantAwareTestCase):
             view = ReviewViewSet.as_view({"post": "create"})
             # 1. Build the request structure cleanly
             request = get_authenticated_request(
-                "post", f"/api/catalog-items/{catalog_item.id}/reviews/", user, data=data
+                "post", f"/api/catalog-items/{catalog_item.slug}/reviews/", user, data=data
             )
             # 2. Inject the nested routing variable directly into the view invocation
             response = view(request, item_pk=catalog_item.id)
@@ -1113,7 +1114,7 @@ class TestReviewViewSet(TenantAwareTestCase):
 
             view = ReviewViewSet.as_view({"post": "create"})
             request = get_authenticated_request(
-                "post", "/api/reviews/", user, data=data
+                "post", f"/api/catalog-items/{catalog_item.slug}/reviews/", user, data=data
             )
             response = view(request)
 
@@ -1132,7 +1133,7 @@ class TestReviewViewSet(TenantAwareTestCase):
 
             view = ReviewViewSet.as_view({"post": "create"})
             request = get_authenticated_request(
-                "post", "/api/reviews/", user, data=data
+                "post", f"/api/catalog-items/{catalog_item.slug}/reviews/", user, data=data
             )
             response = view(request)
 
@@ -1142,11 +1143,11 @@ class TestReviewViewSet(TenantAwareTestCase):
     def test_delete_review(self):
         with tenant_context(self.tenant):
             user = UserFactory(tenant=self.tenant)
-            review = ReviewFactory(client=user, is_approved=True)
-
+            catalog_item = CatalogItemFactory()
+            review = ReviewFactory(client=user,item=catalog_item, is_approved=True)
             view = ReviewViewSet.as_view({"delete": "destroy"})
             request = get_authenticated_request(
-                "delete", f"/api/reviews/{review.id}/", user
+                "delete", f"/api/catalog-items/{catalog_item.slug}/reviews/{review.id}/", user
             )
             response = view(request, pk=review.id)
 
@@ -1158,10 +1159,11 @@ class TestReviewViewSet(TenantAwareTestCase):
             user = UserFactory(tenant=self.tenant)
             other_user = UserFactory(username="otheruser", tenant=self.tenant)
             review = ReviewFactory(client=other_user, is_approved=True)
+            catalog_item = CatalogItemFactory()
 
             view = ReviewViewSet.as_view({"delete": "destroy"})
             request = get_authenticated_request(
-                "delete", f"/api/reviews/{review.id}/", user
+                "delete", f"/api/catalog-items/{catalog_item.slug}/reviews/{review.id}/", user
             )
             response = view(request, pk=review.id)
 

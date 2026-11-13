@@ -292,9 +292,9 @@ class CatalogItemPictureViewSet(NestedScopedViewMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = CatalogItemPicture.objects.select_related("catalog_item")
-        item_pk = self.kwargs.get("catalogitem_pk")
+        item_pk = self.kwargs.get("catalogitem_slug")
         if item_pk is not None:
-            qs = qs.filter(catalog_item_id=item_pk)
+            qs = qs.filter(catalog_item__slug=item_pk)
         return qs
 
     def get_serializer_class(self):
@@ -626,19 +626,14 @@ class ReviewViewSet(NestedScopedViewMixin, viewsets.ModelViewSet):
     filterset_fields = ["rating", "is_approved"]
 
     def get_queryset(self):
-        qs = Review.objects.select_related("item", "client")
-
-        item_pk =   self.kwargs.get("item_pk") if self.kwargs.get("catalogitem_pk") is None else self.kwargs.get("catalogitem_pk")
+        item_pk =  self.kwargs.get("catalogitem_slug") 
+        qs = Review.objects.filter(item__slug=item_pk).select_related("item", "client")
+        
         if item_pk is not None:
-            qs = qs.filter(item_id=item_pk)
+            qs = qs.filter(item__slug=item_pk)
 
-        if self.request.method != "GET":
-            user = self.request.user
-            if user and user.is_authenticated and not _is_tenant_staff(user):
-                qs = qs.filter(client=user)
-        else:
-            if not _is_tenant_staff(self.request.user):
-                qs = qs.filter(is_approved=True)
+        if self.request.user and not _is_tenant_staff(self.request.user):
+            qs = qs.filter(is_approved=True)
 
         return qs
 
@@ -647,19 +642,19 @@ class ReviewViewSet(NestedScopedViewMixin, viewsets.ModelViewSet):
             return ReviewSerializer
         return ReviewWriteSerializer
 
-    def perform_create(self, serializer):
-        # Item FK comes from context (via NestedScopedViewMixin),
-        # but client must be bound from the request.
-        serializer.save(client=self.request.user)
 
-    def perform_update(self, serializer):
-        if not _is_tenant_staff(self.request.user):
-            serializer.save(client=self.request.user)
-        else:
-            serializer.save()
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
         if self.request and self.request.user:
             context["user_id"] = self.request.user.id
-        return context
+
+        catalogitem_slug = self.kwargs.get("catalogitem_slug")
+        if catalogitem_slug:
+            try:
+                catalogitem = CatalogItem.objects.get(slug=catalogitem_slug)
+                context["catalogitem_pk"] = catalogitem.id
+            except CatalogItem.DoesNotExist:
+                pass
+                
+        return context            

@@ -472,7 +472,7 @@ class Information(models.Model):
     """Service-specific detailed Q&A documentation arrays."""
 
     service = models.ForeignKey(
-        "Post", on_delete=models.PROTECT, related_name="informations"
+        "Post", on_delete=models.CASCADE, related_name="informations"
     )
     question = models.CharField(max_length=255)  # Translatable
     information = models.TextField()  # Translatable
