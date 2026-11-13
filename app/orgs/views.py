@@ -305,7 +305,7 @@ class CatalogItemPictureViewSet(NestedScopedViewMixin, viewsets.ModelViewSet):
     def get_serializer_context(self):
         context = super().get_serializer_context()
         catalogitem_slug = self.kwargs.get("catalogitem_slug")
-        
+        context["catalogitem_pk"] = self.kwargs.get("catalogitem_pk")
         if catalogitem_slug:
             try:
                 catalogitem = CatalogItem.objects.get(slug=catalogitem_slug)
@@ -614,7 +614,7 @@ class ExtraImageViewSet(NestedScopedViewMixin, viewsets.ModelViewSet):
 # ===========================================================================
 class ReviewViewSet(NestedScopedViewMixin, viewsets.ModelViewSet):
     """
-    Nested CRUD: /catalog-items/<catalog_item_pk>/reviews/
+    Nested CRUD: /catalogitem/<catalog_item_pk>/reviews/
 
     Parent FK is resolved by ReviewWriteSerializer from context.
     ``client`` is bound in ``perform_create`` because it comes from the
@@ -628,8 +628,7 @@ class ReviewViewSet(NestedScopedViewMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Review.objects.select_related("item", "client")
 
-        item_pk = self.kwargs.get("catalog_item_pk") or self.kwargs.get("item_pk")
-        print(self.kwargs)
+        item_pk =   self.kwargs.get("item_pk") if self.kwargs.get("catalogitem_pk") is None else self.kwargs.get("catalogitem_pk")
         if item_pk is not None:
             qs = qs.filter(item_id=item_pk)
 

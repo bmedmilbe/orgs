@@ -15,7 +15,7 @@ class TestUrlReversal(TenantAwareTestCase):
             "videos-list", "contact-messages-list", "partners-list",
             "roles-list", "team-members-list",
             "financial-budgets-list", "compliance-docs-list",
-            "blog-categories-list", "reviews-list",
+            "blog-categories-list"
         ]:
             url = reverse(f"orgs:{name}")
             assert url.startswith("/api/orgs/")

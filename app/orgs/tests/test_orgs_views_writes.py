@@ -568,7 +568,7 @@ class TestCatalogItemPictureWrite(TenantAwareTestCase):
                     user=user,
                     data=payload,
                 ),
-                item_pk=item.pk,
+                catalogitem_pk=item.pk,
             )
             print(response.data)
             assert response.status_code == status.HTTP_201_CREATED
@@ -592,7 +592,7 @@ class TestCatalogItemPictureWrite(TenantAwareTestCase):
                     user=user,
                     data=payload,
                 ),
-                item_pk=item.pk,
+                catalogitem_pk=item.pk,
             )
             assert response.status_code == status.HTTP_201_CREATED
             previous.refresh_from_db()
