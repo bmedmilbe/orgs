@@ -56,7 +56,7 @@ router.register(r"compliance-docs", ExtraDocViewSet, basename="compliance-docs")
 
 # Parental Node Registration for Nested Blog Categories Layouts
 router.register(r"categories", BlogCategoryViewSet, basename="blog-categories")
-router.register(r"reviews", ReviewViewSet, basename="reviews")
+
 
 # 2. Build the Hierarchical Nested Blog Router Loop
 # lookup='category' creates the 'parent_lookup_category' url variable mapped inside viewset queries
@@ -74,6 +74,12 @@ nested_page_router.register(r"blocks", PageContentBlockViewSet, basename="page-b
 nested_catalog_items_router.register(r"pictures", 
                             CatalogItemPictureViewSet, 
                             basename="catalogitem-pictures")
+nested_catalog_items_router.register(r"reviews", 
+                            ReviewViewSet, 
+                            basename="catalogitem-reviews")
+
+
+
 
 
 # 3. Assemble Consolidated URL Routing Matrix

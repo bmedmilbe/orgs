@@ -847,7 +847,8 @@ class TestReviewViewSet(TenantAwareTestCase):
 
             view = ReviewViewSet.as_view({"get": "list"})
             response = view(
-                make_request("get", f"/api/orgs/catalog-items/{item_a.id}/reviews/"), catalog_item_pk=item_a.id
+                make_request("get", f"/api/orgs/catalog-items/{item_a.id}/reviews/"), 
+                catalogitem_pk=item_a.id
             )
             assert response.status_code == status.HTTP_200_OK
             assert len(response.data) == 2

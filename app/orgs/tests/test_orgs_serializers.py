@@ -679,7 +679,7 @@ class CatalogItemPictureSerializerTests(MultiTenantSerializerTest):
             item = CatalogItemFactory()
             serializer = CatalogItemPictureWriteSerializer(
                 data={"picture" : dummy_picture, "is_feature": True},
-                context=build_context(item_pk=item.pk),
+                context=build_context(item_pk=item.pk, catalogitem_pk=item.pk)
             )
             assert serializer.is_valid(), serializer.errors
 
@@ -696,7 +696,7 @@ class CatalogItemPictureSerializerTests(MultiTenantSerializerTest):
             )
             serializer = CatalogItemPictureWriteSerializer(
                 data={"picture" : dummy_picture, "is_feature": True},
-                context=build_context(item_pk=item.pk),
+                context=build_context(item_pk=item.pk, catalogitem_pk=item.pk),
             )
             assert serializer.is_valid(), serializer.errors
             serializer.save()
@@ -711,7 +711,7 @@ class CatalogItemSpecificationSerializerTests(MultiTenantSerializerTest):
             item = CatalogItemFactory()
             serializer = CatalogItemSpecificationWriteSerializer(
                 data={"key":"key", **_tr("key"), **_tr("value"), "value":"value"},
-                context=build_context(item_pk=item.pk),
+                context=build_context(item_pk=item.pk, catalogitem_pk=item.pk),
             )
             assert serializer.is_valid(), serializer.errors
 
