@@ -572,10 +572,12 @@ class ReviewWriteSerializer(ParentScopeMixin, BaseWriteSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        item_id = self.get_parent_id("item_pk")
+        item_id = self.context.get("item_pk")
 
         user_id = self.context.get("user_id")
 
+        if not item_id:
+            raise serializers.ValidationError({"item_pk": "Item pk not provided."})
         if not user_id:
             raise serializers.ValidationError({"user": "User id must be provided."})
         
@@ -587,7 +589,7 @@ class ReviewWriteSerializer(ParentScopeMixin, BaseWriteSerializer):
         return attrs
 
     def create(self, validated_data):
-        item_id = self.get_parent_id("item_pk")
+        item_id = self.context.get("item_pk")
         user_id = self.context["user_id"]
         return Review.objects.create(item_id=item_id, client_id=user_id, **validated_data)
 

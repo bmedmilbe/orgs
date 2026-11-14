@@ -995,7 +995,7 @@ class TestReviewViewSet(TenantAwareTestCase):
 
             view = ReviewViewSet.as_view({"get": "list"})
             request = get_authenticated_request("get", f"/api/catalog-items/{catalog_item.slug}/reviews/", user)
-            response = view(request)
+            response = view(request,catalogitem_slug=catalog_item.slug)
 
             assert response.status_code == status.HTTP_200_OK
             assert len(response.data) == 2
@@ -1019,7 +1019,7 @@ class TestReviewViewSet(TenantAwareTestCase):
             request = get_authenticated_request(
                 "get", f"/api/catalog-items/{item1.slug}/reviews/", user
             )
-            response = view(request, item_slug=item1.slug)
+            response = view(request, catalogitem_slug=item1.slug)
 
             assert response.status_code == status.HTTP_200_OK
             assert len(response.data) == 2
@@ -1038,8 +1038,8 @@ class TestReviewViewSet(TenantAwareTestCase):
             ReviewFactory(item=item, client=user3, rating=5, is_approved=True)
 
             view = ReviewViewSet.as_view({"get": "list"})
-            request = get_authenticated_request("get", "/api/reviews/?rating=4", user)
-            response = view(request)
+            request = get_authenticated_request("get", f"/api/catalog-items/{item.slug}/reviews/?rating=4", user)
+            response = view(request, catalogitem_slug=item.slug)
 
             assert response.status_code == status.HTTP_200_OK
             assert len(response.data) == 2
@@ -1061,7 +1061,7 @@ class TestReviewViewSet(TenantAwareTestCase):
             request = get_authenticated_request(
                 "get", f"/api/catalog-items/{catalog_item.slug}/reviews/{review.id}/", user
             )
-            response = view(request, pk=review.id)
+            response = view(request, pk=review.id, catalogitem_slug = catalog_item.slug)
 
             assert response.status_code == status.HTTP_200_OK
             assert response.data["rating"] == 4
@@ -1129,7 +1129,7 @@ class TestReviewViewSet(TenantAwareTestCase):
                 item=catalog_item, client=user, rating=4, comment="First review"
             )
 
-            data = {"item": catalog_item.id, "rating": 5, "comment": "Duplicate review"}
+            data = {"rating": 5, "comment": "Duplicate review"}
 
             view = ReviewViewSet.as_view({"post": "create"})
             request = get_authenticated_request(
@@ -1149,7 +1149,7 @@ class TestReviewViewSet(TenantAwareTestCase):
             request = get_authenticated_request(
                 "delete", f"/api/catalog-items/{catalog_item.slug}/reviews/{review.id}/", user
             )
-            response = view(request, pk=review.id)
+            response = view(request, pk=review.id, catalogitem_slug=catalog_item.slug)
 
             assert response.status_code == status.HTTP_204_NO_CONTENT
             assert Review.objects.count() == 0
@@ -1165,7 +1165,7 @@ class TestReviewViewSet(TenantAwareTestCase):
             request = get_authenticated_request(
                 "delete", f"/api/catalog-items/{catalog_item.slug}/reviews/{review.id}/", user
             )
-            response = view(request, pk=review.id)
+            response = view(request, pk=review.id, catalogitem_slug=catalog_item.slug)
 
             assert response.status_code in [status.HTTP_404_NOT_FOUND]
 
