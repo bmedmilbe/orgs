@@ -1193,11 +1193,11 @@ class TestReviewWrite(TenantAwareTestCase):
             response = view(
                 make_request(
                     "patch",
-                    f"/api/catalog-items/{item.pk}/reviews/{review.pk}/",
+                    f"/api/catalog-items/{item.slug}/reviews/{review.pk}/",
                     user=user,
                     data={"rating": 5},
                 ),
-                item_pk=item.pk,
+                catalogitem_slug=item.slug,
                 pk=review.pk,
             )
             assert response.status_code == status.HTTP_200_OK

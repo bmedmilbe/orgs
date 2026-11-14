@@ -626,11 +626,11 @@ class ReviewViewSet(NestedScopedViewMixin, viewsets.ModelViewSet):
     filterset_fields = ["rating", "is_approved"]
 
     def get_queryset(self):
-        item_pk =  self.kwargs.get("catalogitem_slug") 
-        qs = Review.objects.filter(item__slug=item_pk).select_related("item", "client")
+        item_slug =  self.kwargs.get("catalogitem_slug") 
+        qs = Review.objects.filter(item__slug=item_slug).select_related("item", "client")
         
-        if item_pk is not None:
-            qs = qs.filter(item__slug=item_pk)
+        if item_slug is not None:
+            qs = qs.filter(item__slug=item_slug)
 
         if self.request.user and not _is_tenant_staff(self.request.user):
             qs = qs.filter(is_approved=True)
@@ -653,7 +653,7 @@ class ReviewViewSet(NestedScopedViewMixin, viewsets.ModelViewSet):
         if catalogitem_slug:
             try:
                 catalogitem = CatalogItem.objects.get(slug=catalogitem_slug)
-                context["catalogitem_pk"] = catalogitem.id
+                context["item_pk"] = catalogitem.id
             except CatalogItem.DoesNotExist:
                 pass
                 

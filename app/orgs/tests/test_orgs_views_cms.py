@@ -824,7 +824,7 @@ class TestReviewViewSet(TenantAwareTestCase):
             )
 
             view = ReviewViewSet.as_view({"get": "list"})
-            response = view(make_request("get", "/api/reviews/"))
+            response = view(make_request("get", f"/api/catalog-items/{item.slug}/reviews/"),catalogitem_slug=item.slug)
             assert response.status_code == status.HTTP_200_OK
             assert len(response.data) == 1
 
@@ -847,8 +847,8 @@ class TestReviewViewSet(TenantAwareTestCase):
 
             view = ReviewViewSet.as_view({"get": "list"})
             response = view(
-                make_request("get", f"/api/orgs/catalog-items/{item_a.id}/reviews/"), 
-                catalogitem_pk=item_a.id
+                make_request("get", f"/api/catalog-items/{item_a.slug}/reviews/"), 
+                catalogitem_slug=item_a.slug
             )
             assert response.status_code == status.HTTP_200_OK
             assert len(response.data) == 2
@@ -859,23 +859,19 @@ class TestReviewViewSet(TenantAwareTestCase):
             user_b = _tenant_user(self.tenant, username="r2")
             user_c = _tenant_user(self.tenant, username="r3")
             item = CatalogItemFactory()
-            ReviewFactory(
-                item=item, client=user_a, rating=4,
-                
-            )
-            ReviewFactory(
-                item=item, client=user_b, rating=4,
-                
-            )
-            ReviewFactory(
-                item=item, client=user_c, rating=5,
-                
-            )
+            ReviewFactory(item=item, client=user_a, rating=4, )
+            ReviewFactory(item=item, client=user_b, rating=4)
+            ReviewFactory(item=item, client=user_c, rating=5)
 
             view = ReviewViewSet.as_view({"get": "list"})
-            response = view(make_request("get", "/api/reviews/?rating=4"))
+            request = make_request("get",
+                f"/api/catalog-items/{item.slug}/reviews/?rating=4",
+            )
+            response = view(request, catalogitem_slug=item.slug)
+
             assert response.status_code == status.HTTP_200_OK
             assert len(response.data) == 2
+
 
     def test_create_unauthenticated_returns_401(self):
         with tenant_context(self.tenant):
