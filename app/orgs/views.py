@@ -15,9 +15,15 @@ are needed — the write serializers resolve ``<parent>_pk`` from
 ``self.context`` themselves.
 """
 
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, viewsets
-from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
+from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import (
+    AllowAny,
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly,
+)
 from rest_framework.response import Response
 
 from .models import (
@@ -49,7 +55,7 @@ from .models import (
     Video,
     YearGoal,
 )
-from .permissions import IsTenantStaffOrReadOnly
+from .permissions import IsTenantStaff, IsTenantStaffOrReadOnly
 from .serializers.serializers import (
     AssociationImageSerializer,
     AssociationImageWriteSerializer,
@@ -136,13 +142,32 @@ class NestedScopedViewMixin:
 # ===========================================================================
 # 1. CORE & USER MODULE
 # ===========================================================================
-class CustomerViewSet(viewsets.ReadOnlyModelViewSet):
-    """Tenant-scoped list/detail of Customer profiles (read-only)."""
 
+class CustomerViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
     queryset = Customer.objects.optimized()
     serializer_class = CustomerSerializer
-    permission_classes = [IsTenantStaffOrReadOnly]
+    def get_permissions(self):
+        if self.action in ["list", "retrieve"]:
+            return [IsTenantStaff()]
+        return [IsAuthenticated()]
 
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return Customer.objects.none()
+        if user.is_staff:
+            return Customer.objects.optimized()
+        return Customer.objects.optimized().filter(user=user)
+
+    @action(detail=False, methods=["get"], url_path="me")
+    def me(self, request):
+        customer = get_object_or_404(self.get_queryset(), user=request.user)
+        serializer = self.get_serializer(customer)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 # ===========================================================================
 # 2. DYNAMIC CONTENT & PAGE BUILDER

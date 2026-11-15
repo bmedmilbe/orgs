@@ -80,18 +80,32 @@ class TenantUserCreateSerializer(UserCreateSerializer):
     def validate(self, attrs):
         attrs = super().validate(attrs)
         request = self.context.get("request")
-
+        
+         
         if not request or not hasattr(request, "tenant") or request.tenant is None:
             raise serializers.ValidationError(
                 {"tenant": "A valid tenant context is required to register a user."}
             )
 
+        domain_type = getattr(request, "domain_type",None)
+        if domain_type == DomainType.ROOT:
+            raise serializers.ValidationError(
+                {"tenant": "Non root user may not be registered as root user."}
+            )
+
+        domain_type = getattr(request, "domain_type", None)
+        if domain_type == DomainType.BRIDGE and not attrs.get("is_customer"):
+            raise serializers.ValidationError(
+                {"is_customer": "Users on a bridge domain must register as a customer."}
+            )
+
+
         return attrs
+        
 
     def create(self, validated_data):
         request = self.context.get("request")
         domain_type = getattr(request, "domain_type", DomainType.TENANT)
-
         # 1. BRIDGE DOMAIN SIGNUP -> customer Creation
         if domain_type == DomainType.BRIDGE:
             return UserService.register_customer_via_bridge(

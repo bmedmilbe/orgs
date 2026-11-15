@@ -27,14 +27,13 @@ class TenantMiddleware:
         # 1. Determine Domain Type
         public_domains = [getattr(settings, "PUBLIC_DOMAIN", "")]
         bridge_domains = [getattr(settings, "BRIDGE_DOMAIN", "")]
-
+        
         if host in public_domains:
             request.domain_type = DomainType.ROOT
         elif host in bridge_domains:
             request.domain_type = DomainType.BRIDGE
         else:
             request.domain_type = DomainType.TENANT
-
         # 2. Resolve Tenant
         tenant = None
         try:

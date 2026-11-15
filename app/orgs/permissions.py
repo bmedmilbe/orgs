@@ -50,8 +50,8 @@ class IsTenantStaffOrReadOnly(BasePermission):
         #    (see models.Customer.user -> related_name="cms_customer").
         #    Because Customer lives in the tenant schema, this query is
         #    automatically constrained by django-tenants' search_path.
-        return user.cms_customer_set.exists() if hasattr(
-            user, "cms_customer_set"
+        return user.cms_customer if hasattr(
+            user, "cms_customer"
         ) else _has_cms_customer(user)
 
 
@@ -60,3 +60,30 @@ def _has_cms_customer(user):
     from .models import Customer
 
     return Customer.objects.filter(user=user).exists()
+class IsTenantStaff(BasePermission):
+    """
+    Require authenticated staff-of-tenant credentials for ALL methods
+    (including GET/list/retrieve).
+    """
+
+    message = (
+        "You must be an authenticated tenant staff member to perform "
+        "this action."
+    )
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+
+        if not getattr(user, "is_staff", False):
+            return False
+        
+
+        # Customer lives in the tenant schema, so this checks membership
+        # in the active tenant's search_path.
+        return (
+            user.cms_customer 
+            if hasattr(user, "cms_customer")
+            else _has_cms_customer(user)
+        )

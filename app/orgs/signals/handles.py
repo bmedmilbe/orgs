@@ -270,11 +270,10 @@ def create_customer_profile_on_new_user(sender, instance, created, **kwargs):
     Listens to User creation events and delegates profile provisioning
     safely on successful database transaction commits.
     """
-    if not created or not instance.is_customer:
+    if not created:
         return
-
+    
     tenant = getattr(instance, "tenant", None)
-    print(tenant)
     if tenant and tenant.schema_name != "public":
         # Wraps execution to trigger strictly *after* the global transaction clears successfully
         transaction.on_commit(

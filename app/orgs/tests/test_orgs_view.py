@@ -22,6 +22,7 @@ from orgs.tests.factories import (
     CatalogItemFactory,
     CatalogItemSpecificationFactory,
     CategoryFactory,
+    ClientFactory,
     CustomerFactory,
     DistrictFactory,
     ExtraDocFactory,
@@ -60,6 +61,8 @@ from orgs.views import (
     YearGoalViewSet,
 )
 
+from .test_orgs_views_cms import make_request
+
 User = get_user_model()
 
 
@@ -81,44 +84,149 @@ def get_authenticated_request(method, path, user, data=None, format="json"):
 # ==========================================
 
 
-class TestCustomerViewSet(TenantAwareTestCase):  # ✅ Use TenantAwareTestCase
-    def test_list_customers(self):
-        with tenant_context(self.tenant):  # ✅ Use self.tenant
-            user = UserFactory(tenant=self.tenant)
-            customer1 = CustomerFactory(user__tenant=self.tenant)
-            customer2 = CustomerFactory(user__tenant=self.tenant)
+class TestCustomerViewSet(TenantAwareTestCase):
+    # --- Staff (same tenant) tests ---
+
+    def test_list_customers_as_tenant_staff(self):
+        with tenant_context(self.tenant):
+            
+            customer = CustomerFactory(user__tenant=self.tenant)
+            staff_user = customer.user
+            staff_user.is_staff=True
+            staff_user.save()
+            
+            CustomerFactory(user__tenant=self.tenant)
 
             view = CustomerViewSet.as_view({"get": "list"})
-            request = get_authenticated_request("get", "/api/customers/", user)
+            request = get_authenticated_request("get", "/api/customers/", staff_user)
+            request.tenant = self.tenant
             response = view(request)
 
             assert response.status_code == status.HTTP_200_OK
             assert len(response.data) == 2
 
-    def test_retrieve_customer(self):
+    def test_retrieve_customer_as_tenant_staff(self):
         with tenant_context(self.tenant):
-            user = UserFactory(tenant=self.tenant)
             customer = CustomerFactory(user__tenant=self.tenant)
+            staff_user = customer.user
+            staff_user.is_staff=True
+            staff_user.save()
 
+            print(staff_user.is_staff)
             view = CustomerViewSet.as_view({"get": "retrieve"})
             request = get_authenticated_request(
-                "get", f"/api/customers/{customer.id}/", user
+                "get", f"/api/customers/{customer.id}/", staff_user
             )
+            request.tenant = self.tenant
             response = view(request, pk=customer.id)
 
             assert response.status_code == status.HTTP_200_OK
             assert response.data["id"] == customer.id
             assert response.data["first_name"] == customer.user.first_name
 
-    def test_retrieve_nonexistent_customer(self):
+    def test_retrieve_nonexistent_customer_as_tenant_staff(self):
         with tenant_context(self.tenant):
-            user = UserFactory(tenant=self.tenant)
+            customer = CustomerFactory(user__tenant=self.tenant)
+            staff_user = customer.user
+            staff_user.is_staff=True
+            staff_user.save()
 
             view = CustomerViewSet.as_view({"get": "retrieve"})
-            request = get_authenticated_request("get", "/api/customers/999/", user)
+            request = get_authenticated_request("get", "/api/customers/999/", staff_user)
+            request.tenant = self.tenant
             response = view(request, pk=999)
 
             assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    # --- Non-staff tests ---
+
+    def test_list_customers_forbidden_for_non_staff(self):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant, is_staff=False)
+            CustomerFactory(user__tenant=self.tenant)
+
+            view = CustomerViewSet.as_view({"get": "list"})
+            request = get_authenticated_request("get", "/api/customers/", user)
+            request.tenant = self.tenant
+            response = view(request)
+
+            assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_retrieve_customer_forbidden_for_non_staff(self):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant, is_staff=False)
+            customer = CustomerFactory(user=user)
+
+            view = CustomerViewSet.as_view({"get": "retrieve"})
+            request = get_authenticated_request(
+                "get", f"/api/customers/{customer.id}/", user
+            )
+            request.tenant = self.tenant
+            response = view(request, pk=customer.id)
+
+            assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_me_returns_authenticated_user_customer(self):
+        with tenant_context(self.tenant):
+            user = UserFactory(tenant=self.tenant, is_staff=False)
+            customer = CustomerFactory(user=user)
+            CustomerFactory(user__tenant=self.tenant)  # another customer
+
+            view = CustomerViewSet.as_view({"get": "me"})
+            request = get_authenticated_request("get", "/api/customers/me/", user)
+            request.tenant = self.tenant
+            response = view(request)
+
+            assert response.status_code == status.HTTP_200_OK
+            assert response.data["id"] == customer.id
+            assert response.data["first_name"] == user.first_name
+
+    # --- Cross-tenant staff test ---
+
+    def test_staff_from_other_tenant_cannot_list_or_retrieve(self):
+        other_tenant = ClientFactory()
+        with tenant_context(self.tenant):
+            other_tenant_staff = UserFactory(tenant=other_tenant, is_staff=True)
+            customer = CustomerFactory(user__tenant=self.tenant)
+
+            list_view = CustomerViewSet.as_view({"get": "list"})
+            list_req = get_authenticated_request(
+                "get", "/api/customers/", other_tenant_staff
+            )
+            list_req.tenant = self.tenant
+            assert list_view(list_req).status_code == status.HTTP_403_FORBIDDEN
+
+            retrieve_view = CustomerViewSet.as_view({"get": "retrieve"})
+            retrieve_req = get_authenticated_request(
+                "get", f"/api/customers/{customer.id}/", other_tenant_staff
+            )
+            retrieve_req.tenant = self.tenant
+            assert (
+                retrieve_view(retrieve_req, pk=customer.id).status_code
+                == status.HTTP_403_FORBIDDEN
+            )
+
+    # --- Anonymous user tests ---
+
+    def test_anonymous_has_no_access(self):
+        with tenant_context(self.tenant):
+            customer = CustomerFactory(user__tenant=self.tenant)
+
+            for action_map, url, kwargs in [
+                ({"get": "list"}, "/api/customers/", {}),
+                ({"get": "retrieve"}, f"/api/customers/{customer.id}/", {"pk": customer.id}),
+                ({"get": "me"}, "/api/customers/me/", {}),
+            ]:
+                view = CustomerViewSet.as_view(action_map)
+                request = make_request("get", url)
+                request.tenant = self.tenant
+                response = view(request, **kwargs)
+
+                assert response.status_code in (
+                    status.HTTP_401_UNAUTHORIZED,
+                    status.HTTP_403_FORBIDDEN,
+                )
+
 
 
 # ==========================================
