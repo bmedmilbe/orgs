@@ -599,6 +599,8 @@ class UserFactory(factory.django.DjangoModelFactory):
     password = factory.PostGenerationMethodCall("set_password", "pw")
     first_name = "Test"
     last_name = "User"
+    is_staff = False
+    is_superuser = False
 
 
 

@@ -93,7 +93,7 @@ def _tenant_user(tenant, **kwargs):
 # 1. CORE & USER MODULE
 # ==========================================
 class TestCustomerViewSet(TenantAwareTestCase):
-    def test_list_customers_anonymous_allowed(self):
+    def test_list_customers_anonymous_not_allowed(self):
         with tenant_context(self.tenant):
             CustomerFactory(user__tenant=self.tenant)
             CustomerFactory(user__tenant=self.tenant)
@@ -101,29 +101,49 @@ class TestCustomerViewSet(TenantAwareTestCase):
             view = CustomerViewSet.as_view({"get": "list"})
             response = view(make_request("get", "/api/customers/"))
 
-            assert response.status_code == status.HTTP_200_OK
-            assert len(response.data) == 2
+            assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_retrieve_customer(self):
         with tenant_context(self.tenant):
-            user = _tenant_user(self.tenant)
             customer = CustomerFactory(user__tenant=self.tenant)
 
-            view = CustomerViewSet.as_view({"get": "retrieve"})
+            view = CustomerViewSet.as_view({"get": "me"})
             response = view(
-                make_request("get", f"/api/customers/{customer.id}/"),
-                pk=customer.id,
+                make_request("get", "/api/customers/me/", user = customer.user),
+                
             )
 
             assert response.status_code == status.HTTP_200_OK
             assert response.data["id"] == customer.id
 
+    def test_retrieve_customer_includes_user_flags(self):
+        with tenant_context(self.tenant):
+            customer = CustomerFactory(
+                user__tenant=self.tenant,
+                user__is_staff=True,
+                user__is_superuser=False,
+            )
+
+            view = CustomerViewSet.as_view({"get": "me"})
+            response = view(
+                make_request("get", "/api/customers/me/", user=customer.user),
+            )
+
+            assert response.status_code == status.HTTP_200_OK
+            assert response.data["is_staff"] is True
+            assert response.data["is_superuser"] is False
+
     def test_retrieve_nonexistent_returns_404(self):
         with tenant_context(self.tenant):
-            user = _tenant_user(self.tenant)
+            
+            customer = CustomerFactory(
+                            user__tenant=self.tenant,
+                            user__is_staff=True,
+                            user__is_superuser=False,
+                        )
             view = CustomerViewSet.as_view({"get": "retrieve"})
             response = view(
-                make_request("get", "/api/customers/999/", user=user), pk=999
+                make_request("get", "/api/customers/999/", user=customer.user), pk=999
             )
             assert response.status_code == status.HTTP_404_NOT_FOUND
 
