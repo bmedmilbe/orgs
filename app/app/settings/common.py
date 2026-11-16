@@ -213,3 +213,5 @@ DJOSER = {
 
 PUBLIC_DOMAIN = "localhost"
 BRIDGE_DOMAIN = "bridge.localhost"
+
+

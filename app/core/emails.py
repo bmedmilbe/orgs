@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 
 
 class TenantRoleBasedPasswordResetEmail(email.PasswordResetEmail):
-    template_name = "email/password_reset.html"
+    template_name = "email/tenant_password_reset.html"
 
     def get_context_data(self):
         context = super().get_context_data()
