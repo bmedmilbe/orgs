@@ -58,10 +58,6 @@ CSRF_TRUSTED_ORIGINS = os.environ.get(
     "CSRF_TRUSTED_ORIGINS", "http://localhost:8000 http://127.0.0.1:8000"
 ).split(" ")
 
-
-import os
-
-# Email Configuration (Production Defaults)
 EMAIL_BACKEND = os.environ.get(
     "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
 )
