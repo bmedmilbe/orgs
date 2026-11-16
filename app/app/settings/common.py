@@ -42,6 +42,7 @@ SHARED_APPS = [
     "drf_spectacular",
     "storages",
     "djoser",
+    "anymail",
     "core",
     "app",
 ]

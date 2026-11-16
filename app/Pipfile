@@ -42,6 +42,7 @@ django-web-components = "*"
 django-jazzmin = "*"
 django-admin-interface = "*"
 drf-spectacular = "*"
+django-anymail = {extras = ["resend"], version = "*"}
 
 [dev-packages]
 # Linters & Formatters
