@@ -188,20 +188,22 @@ SIMPLE_JWT = {
 DJOSER = {
     "TOKEN_MODEL": None,
     "LOGIN_FIELD": "email",
-    "PASSWORD_RESET_CONFIRM_URL": "#/password/reset/confirm/{uid}/{token}",
-    "USERNAME_RESET_CONFIRM_URL": "#/username/reset/confirm/{uid}/{token}",
+    "PASSWORD_RESET_CONFIRM_URL": "/password/reset/confirm/{uid}/{token}",
+    "USERNAME_RESET_CONFIRM_URL": "/username/reset/confirm/{uid}/{token}",
     "PASSWORD_RESET_CONFIRM_RETYPE": True,
     "SET_PASSWORD_RETYPE": True,
     "EMAIL": {
         "password_reset": "core.emails.TenantRoleBasedPasswordResetEmail",
     },
     "SERIALIZERS": {
-        "jwt_create": "core.serializers.TenantJWTCreateSerialize",
+        "jwt_create": "core.serializers.TenantJWTCreateSerializer",
         "user_create": "core.serializers.TenantUserCreateSerializer",
         "current_user": "djoser.serializers.UserSerializer",
         "set_password": "core.serializers.TenantSetPasswordSerializer",
+        "password_reset": "core.serializers.TenantSendEmailResetSerializer",
         "password_reset_confirm": "core.serializers.TenantPasswordResetConfirmSerializer",
     },
+
 }
 
 

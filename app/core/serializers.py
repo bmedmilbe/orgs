@@ -1,7 +1,10 @@
+
+
 from django.contrib.auth import authenticate, get_user_model
 from django.utils.translation import gettext_lazy as _
 from djoser.serializers import (
     PasswordResetConfirmSerializer,
+    SendEmailResetSerializer,
     SetPasswordSerializer,
     UserCreateSerializer,
 )
@@ -171,3 +174,43 @@ class TenantPasswordResetConfirmSerializer(PasswordResetConfirmSerializer):
             )
 
         return attrs
+
+
+
+
+class TenantSendEmailResetSerializer(SendEmailResetSerializer):
+    """Handles tenant-scoped password reset email requests with a client-supplied base URL."""
+
+    base_url = serializers.URLField(required=True)
+
+    
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        request = self.context.get("request")
+
+        if not request or not hasattr(request, "tenant") or request.tenant is None:
+            raise serializers.ValidationError(
+                {"tenant": "A valid tenant context is required."}
+            )
+
+        base_url = attrs["base_url"]
+        request.reset_base_url = base_url
+        if hasattr(request, "_request"):
+            request._request.reset_base_url = base_url
+
+        return attrs
+
+    def get_user(self, is_active=True):
+        """Scope user lookup strictly to the active tenant."""
+        request = self.context.get("request")
+        email = self.data.get(self.email_field, "")
+
+        if not request or not getattr(request, "tenant", None):
+            return None
+
+        return User.objects.filter(
+            email__iexact=email,
+            tenant=request.tenant,
+            is_active=is_active,
+        ).first()

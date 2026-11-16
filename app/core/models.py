@@ -55,18 +55,7 @@ class User(AbstractUser):
                 fields=["tenant"],
                 condition=models.Q(is_customer=True),
                 name="unique_single_customer_per_tenant",
-            ),
-            # 3. GLOBAL uniqueness for customers across all tenants
-            models.UniqueConstraint(
-                fields=["email"],
-                condition=models.Q(is_customer=True, email__isnull=False),
-                name="unique_customer_email_global",
-            ),
-            models.UniqueConstraint(
-                fields=["phone"],
-                condition=models.Q(is_customer=True, phone__isnull=False),
-                name="unique_customer_phone_global",
-            ),
+            )
         ]
 
     def clean(self):
